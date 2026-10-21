@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { Config } from '../config.js';
+import { registerCheckTaskAgainstSpec } from './tools/check-task-against-spec.js';
 import { registerGetSpec } from './tools/get-spec.js';
 import { registerListOpenRequirements } from './tools/list-open-requirements.js';
 import { registerListSpecs } from './tools/list-specs.js';
@@ -11,4 +12,5 @@ export function register(server: McpServer, config: Config) {
   registerGetSpec(server, config);
   registerListOpenRequirements(server, config);
   registerSetCriterionStatus(server, config);
+  registerCheckTaskAgainstSpec(server, config);
 }

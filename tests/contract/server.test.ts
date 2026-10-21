@@ -9,7 +9,7 @@ const entry = fileURLToPath(new URL('../../dist/index.js', import.meta.url));
 const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
 // Every tool the finished server must expose; each spec adds its own.
-export const EXPECTED_TOOLS = ['get_spec', 'list_open_requirements', 'list_specs', 'log_decision', 'set_criterion_status'];
+export const EXPECTED_TOOLS = ['check_task_against_spec', 'get_spec', 'list_open_requirements', 'list_specs', 'log_decision', 'set_criterion_status'];
 
 let client: Client | undefined;
 afterEach(async () => {
