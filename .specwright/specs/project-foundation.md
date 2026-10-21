@@ -1,7 +1,7 @@
 ---
 id: project-foundation
 title: Fundação do projeto (repositório, estrutura, build, CI)
-status: draft
+status: in-progress
 ---
 
 ## Contexto
@@ -50,13 +50,13 @@ package.json  package-lock.json  tsconfig.json
 
 ## Critérios de aceite
 - [x] AC-1: O repositório privado `ThiagoNascBarros/specwright` existe no GitHub
-- [ ] AC-2: `npm ci && npm run build` termina com código 0 e gera `dist/index.js` começando com `#!/usr/bin/env node`
-- [ ] AC-3: `npm run typecheck` termina com código 0, com `strict: true` no `tsconfig.json`
-- [ ] AC-4: O teste de contrato inicia `node dist/index.js` via stdio com o cliente do SDK e recebe `serverInfo.name === "specwright"` e `serverInfo.version` igual ao `version` do `package.json`
-- [ ] AC-5: O teste de contrato confirma que o servidor expõe zero tools: `listTools` devolve lista vazia, ou o servidor não anuncia a capability `tools`
-- [ ] AC-6: Todas as pastas e arquivos listados em "Requisitos" existem, e o `package.json` declara exatamente as dependências do TRD §2
-- [ ] AC-7: `README.md` existe com 0 bytes
-- [ ] AC-8: O CI do GitHub Actions roda verde em Node 22 e 24 na PR desta spec
+- [x] AC-2: `npm ci && npm run build` termina com código 0 e gera `dist/index.js` começando com `#!/usr/bin/env node`
+- [x] AC-3: `npm run typecheck` termina com código 0, com `strict: true` no `tsconfig.json`
+- [x] AC-4: O teste de contrato inicia `node dist/index.js` via stdio com o cliente do SDK e recebe `serverInfo.name === "specwright"` e `serverInfo.version` igual ao `version` do `package.json`
+- [x] AC-5: O teste de contrato confirma que o servidor expõe zero tools: `listTools` devolve lista vazia, ou o servidor não anuncia a capability `tools`
+- [x] AC-6: Todas as pastas e arquivos listados em "Requisitos" existem, e o `package.json` declara exatamente as dependências do TRD §2
+- [x] AC-7: `README.md` existe com 0 bytes
+- [x] AC-8: O CI do GitHub Actions roda verde em Node 22 e 24 na PR desta spec
 - [ ] AC-9: `main` recebe esta spec por PR, com merge feito após o CI verde. Como o repositório está vazio, `main` nasce de um commit inicial que contém só o `README.md` vazio, e a PR parte dele.
 
 ## Fora de escopo
