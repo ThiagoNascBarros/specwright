@@ -36,7 +36,7 @@ Spec 1 is the foundation: repository, structure, build, CI and a server that sta
 
 | # | Spec id | Delivery | Requirements | Status |
 |---|---|---|---|---|
-| 1 | `project-foundation` | GitHub repository, folder structure from TRD §3, `package.json`, `tsconfig`, CI, stdio server with no tools and contract test | NFR-9, NFR-10 | [ ] |
+| 1 | `project-foundation` | GitHub repository, folder structure from TRD §3, `package.json`, `tsconfig`, CI, stdio server with no tools and contract test | NFR-9, NFR-10 | [x] |
 | 2 | `spec-reading` | `config.ts`, `errors.ts`, `storage/paths` and `storage/markdown`, spec parser, and the tools `list_specs` and `get_spec` | FR-1, FR-2, FR-3, NFR-3, NFR-4, NFR-6, NFR-7, NFR-8 | [ ] |
 | 3 | `acceptance-criteria` | `storage/files` (atomic write, minimal edit), `list_open_requirements` and `set_criterion_status` | FR-4, FR-6, NFR-5 | [ ] |
 | 4 | `decision-log` | Exclusive file creation and `log_decision` | FR-7 | [ ] |
@@ -66,4 +66,4 @@ Before starting, decide PRD Q1 (tokenizer).
 - [x] TRD-001 (v0.2)
 - [x] ADR-0001 to ADR-0005
 - [x] RM-001 (v0.2)
-- [ ] Spec 1 `project-foundation` (under review)
+- [x] Spec 1 `project-foundation`
