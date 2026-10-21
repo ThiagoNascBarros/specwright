@@ -8,62 +8,62 @@ implements: TRD-001
 
 # RM-001 — Roadmap
 
-Ordem de entrega das specs de desenvolvimento. Este documento **não é** um plano de implementação: cada spec ganha o seu plano no momento em que for desenvolvida.
+Delivery order of the development specs. This document **is not** an implementation plan: each spec gets its own plan when it is developed.
 
-## Ciclo por spec
+## Per-spec cycle
 
-Uma spec por vez. A próxima só começa quando a anterior está concluída.
+One spec at a time. The next one starts only when the previous one is complete.
 
-| # | Etapa | Artefato | Skill superpowers | Gate |
+| # | Step | Artifact | Superpowers skill | Gate |
 |---|---|---|---|---|
-| 1 | Escrever a spec | `.specwright/specs/<id>.md` (formato do [TRD §6.1](02-trd.md)) | `brainstorming` | você aprova a spec |
-| 2 | Plano de implementação | `docs/superpowers/plans/AAAA-MM-DD-<id>.md` | `writing-plans` | você aprova o plano e escolhe o modo de execução |
-| 3 | Implementar | código + testes, numa branch | `test-driven-development`, mais `subagent-driven-development` ou `executing-plans` | cada `AC-n` tem teste que falhou antes de passar |
-| 4 | Verificar | saída de `npm test` e `tsc --noEmit` | `verification-before-completion` | suíte inteira verde, com evidência |
-| 5 | Fechar | critérios marcados, decisões registradas, merge | `finishing-a-development-branch` | spec com `status: done` |
+| 1 | Write the spec | `.specwright/specs/<id>.md` (format from [TRD §6.1](02-trd.md)) | `brainstorming` | you approve the spec |
+| 2 | Implementation plan | `docs/superpowers/plans/AAAA-MM-DD-<id>.md` | `writing-plans` | you approve the plan and choose the execution mode |
+| 3 | Implement | code + tests, on a branch | `test-driven-development`, plus `subagent-driven-development` or `executing-plans` | each `AC-n` has a test that failed before passing |
+| 4 | Verify | output of `npm test` and `tsc --noEmit` | `verification-before-completion` | whole suite green, with evidence |
+| 5 | Close | criteria checked, decisions recorded, merge | `finishing-a-development-branch` | spec with `status: done` |
 
-**Definição de pronto de uma spec**
-1. Todos os `AC-n` estão cobertos por um teste que cita o id e foi visto falhando antes da implementação.
-2. `npm test` (a suíte inteira) e `tsc --noEmit` estão verdes, e a saída foi anexada ao fechamento.
-3. Os critérios estão marcados na spec. A partir da spec 3 isso é feito com `set_criterion_status`; nas specs 1 e 2, à mão.
-4. As decisões relevantes estão registradas. A partir da spec 4 isso é feito com `log_decision`; antes dela, como ADR em `docs/adr/`.
-5. O dogfooding de fumaça foi executado (TRD §10), a partir da spec 2.
-6. O CI da branch está verde.
+**Definition of done for a spec**
+1. All `AC-n` are covered by a test that cites the id and was seen failing before the implementation.
+2. `npm test` (the whole suite) and `tsc --noEmit` are green, and the output is attached to the closing.
+3. The criteria are checked off in the spec. From spec 3 onward this is done with `set_criterion_status`; in specs 1 and 2, by hand.
+4. Relevant decisions are recorded. From spec 4 onward this is done with `log_decision`; before that, as an ADR in `docs/adr/`.
+5. The smoke dogfooding was run (TRD §10), from spec 2 onward.
+6. The branch's CI is green.
 
-## Fase 1: núcleo de specs
+## Phase 1: spec core
 
-A spec 1 é a fundação: repositório, estrutura, build, CI e um servidor que sobe sem tools. Da spec 2 em diante, cada spec é uma fatia vertical: ao terminar, o servidor tem tools novas e utilizáveis por um agente.
+Spec 1 is the foundation: repository, structure, build, CI and a server that starts with no tools. From spec 2 onward, each spec is a vertical slice: when finished, the server has new tools usable by an agent.
 
-| # | Spec id | Entrega | Requisitos | Status |
+| # | Spec id | Delivery | Requirements | Status |
 |---|---|---|---|---|
-| 1 | `project-foundation` | Repositório GitHub, estrutura de pastas do TRD §3, `package.json`, `tsconfig`, CI, servidor stdio sem tools e teste de contrato | NFR-9, NFR-10 | [ ] |
-| 2 | `spec-reading` | `config.ts`, `errors.ts`, `storage/paths` e `storage/markdown`, parser de spec e as tools `list_specs` e `get_spec` | FR-1, FR-2, FR-3, NFR-3, NFR-4, NFR-6, NFR-7, NFR-8 | [ ] |
-| 3 | `acceptance-criteria` | `storage/files` (escrita atômica, edição mínima), `list_open_requirements` e `set_criterion_status` | FR-4, FR-6, NFR-5 | [ ] |
-| 4 | `decision-log` | Criação exclusiva de arquivo e `log_decision` | FR-7 | [ ] |
-| 5 | `check-task` | Parser de diff e `check_task_against_spec`; decidir a TRD Q1 | FR-5 | [ ] |
+| 1 | `project-foundation` | GitHub repository, folder structure from TRD §3, `package.json`, `tsconfig`, CI, stdio server with no tools and contract test | NFR-9, NFR-10 | [ ] |
+| 2 | `spec-reading` | `config.ts`, `errors.ts`, `storage/paths` and `storage/markdown`, spec parser, and the tools `list_specs` and `get_spec` | FR-1, FR-2, FR-3, NFR-3, NFR-4, NFR-6, NFR-7, NFR-8 | [ ] |
+| 3 | `acceptance-criteria` | `storage/files` (atomic write, minimal edit), `list_open_requirements` and `set_criterion_status` | FR-4, FR-6, NFR-5 | [ ] |
+| 4 | `decision-log` | Exclusive file creation and `log_decision` | FR-7 | [ ] |
+| 5 | `check-task` | Diff parser and `check_task_against_spec`; decide TRD Q1 | FR-5 | [ ] |
 
-**Pronto da Fase 1:** as 5 specs com `status: done`, mais um ciclo completo executado no próprio repositório (PRD §7, Fase 1) e o README de instalação.
+**Phase 1 done when:** the 5 specs have `status: done`, plus one complete cycle run on the repository itself (PRD §7, Phase 1) and the installation README.
 
-## Fase 2: memória de projeto
+## Phase 2: project memory
 
-| Spec id | Entrega | Requisitos |
+| Spec id | Delivery | Requirements |
 |---|---|---|
-| `memory` | `save_memory` e `search_memory` (sobre memórias e decisões) | FR-8, FR-9 |
+| `memory` | `save_memory` and `search_memory` (over memories and decisions) | FR-8, FR-9 |
 | `decision-list` | `list_decisions` | FR-10 |
 
-Termina quando a métrica de sucesso da Fase 2 (PRD §7) é demonstrada.
+Ends when the Phase 2 success metric (PRD §7) is demonstrated.
 
-## Fase 3: Context Packer
+## Phase 3: Context Packer
 
-| Spec id | Entrega | Requisitos |
+| Spec id | Delivery | Requirements |
 |---|---|---|
-| `context-pack` | Orçamento de tokens e `pack_context` | FR-11 |
+| `context-pack` | Token budget and `pack_context` | FR-11 |
 
-Antes de começar, decidir a PRD Q1 (tokenizador).
+Before starting, decide PRD Q1 (tokenizer).
 
-## Marcos de documentação
+## Documentation milestones
 - [x] PRD-001 (v0.2)
 - [x] TRD-001 (v0.2)
-- [x] ADR-0001 a ADR-0005
+- [x] ADR-0001 to ADR-0005
 - [x] RM-001 (v0.2)
-- [ ] Spec 1 `project-foundation` (em revisão)
+- [ ] Spec 1 `project-foundation` (under review)

@@ -8,278 +8,278 @@ implements: PRD-001
 
 # TRD-001 — Specwright
 
-Responde **como** o [PRD-001](01-prd.md) será construído. As decisões, com as alternativas consideradas, estão nos ADRs em [`adr/`](adr/). As specs de desenvolvimento e os planos de implementação seguem o [Roadmap](03-roadmap.md).
+Explains **how** the [PRD-001](01-prd.md) will be built. The decisions, with the alternatives considered, are in the ADRs in [`adr/`](adr/). The development specs and implementation plans follow the [Roadmap](03-roadmap.md).
 
-## 1. Visão técnica
+## 1. Technical vision
 
-Servidor MCP em TypeScript, transporte **stdio**, sobre o SDK oficial v2 (`@modelcontextprotocol/server`) ([ADR-0002](adr/0002-typescript.md)). Não usa LLM ([ADR-0003](adr/0003-sem-llm-no-servidor.md)) nem banco ([ADR-0004](adr/0004-armazenamento-em-markdown.md)). Todo o estado é Markdown em `.specwright/`, dentro do repositório do projeto-alvo, **relido a cada chamada**: não existe índice persistente nem cache.
+MCP server in TypeScript, **stdio** transport, on top of the official SDK v2 (`@modelcontextprotocol/server`) ([ADR-0002](adr/0002-typescript.md)). It uses no LLM ([ADR-0003](adr/0003-no-llm-in-server.md)) and no database ([ADR-0004](adr/0004-markdown-storage.md)). All state is Markdown in `.specwright/`, inside the target project's repository, **re-read on every call**: there is no persistent index and no cache.
 
 ```
-Cliente MCP (agente)
+MCP client (agent)
         │ stdio / JSON-RPC
         ▼
-   src/index.ts ── registra as tools de cada módulo
+   src/index.ts ── registers the tools of each module
         │
    ┌────┼──────────────┐
- specs/ memory/       context/     (módulos independentes)
+ specs/ memory/       context/     (independent modules)
    └────┼──────────────┘
         ▼
-    storage/  ── única camada que toca o disco
+    storage/  ── the only layer that touches the disk
         ▼
  .specwright/{config.json, specs/, decisions/, memory/}
 ```
 
-## 2. Restrições globais
+## 2. Global constraints
 
-Todo plano de implementação copia esta lista literalmente para a seção *Global Constraints*.
+Every implementation plan copies this list verbatim into its *Global Constraints* section.
 
-- Node.js **≥ 22** (o Node 20 saiu de LTS em 2026-04); TypeScript em modo `strict`; ESM (`"type": "module"`).
-- Dependências de runtime permitidas: `@modelcontextprotocol/server` (v2), `zod` (v4), `yaml` (v2). Qualquer outra exige ADR.
-- Dependências de desenvolvimento: `typescript`, `vitest`, `@types/node` e `@modelcontextprotocol/client` (v2, usado no teste de contrato). Sem linter na Fase 1: `tsc --noEmit` é o gate de tipos.
-- Proibido no servidor: rede, `child_process`, chamada a LLM, escrita fora de `SPECWRIGHT_DIR`.
-- Nomes de tool em `snake_case` e em inglês. Mensagens de erro em inglês, com `code` estável.
-- Toda tool devolve JSON compacto em um único bloco de texto.
-- No total, até 10 tools (PRD NFR-2).
+- Node.js **≥ 22.12** (the Node 20 left LTS on 2026-04; 22.12 is the floor required by Vitest 5); TypeScript in `strict` mode; ESM (`"type": "module"`).
+- Allowed runtime dependencies: `@modelcontextprotocol/server` (v2), `zod` (v4), `yaml` (v2). Any other requires an ADR.
+- Development dependencies: `typescript`, `vitest`, `@types/node` and `@modelcontextprotocol/client` (v2, used in the contract test). No linter in Phase 1: `tsc --noEmit && tsc -p tests` (src and tests) is the type gate.
+- Forbidden in the server: network, `child_process`, LLM calls, writes outside `SPECWRIGHT_DIR`.
+- Tool names in `snake_case` and in English. Error messages in English, with a stable `code`.
+- Every tool returns compact JSON in a single text block.
+- In total, up to 10 tools (PRD NFR-2).
 
-## 3. Estrutura do código
+## 3. Code structure
 
 ```
 src/
-├── index.ts          # cria o servidor, carrega a config, registra as tools
-├── config.ts         # resolve SPECWRIGHT_DIR e config.json
-├── errors.ts         # SpecwrightError + códigos
+├── index.ts          # creates the server, loads the config, registers the tools
+├── config.ts         # resolves SPECWRIGHT_DIR and config.json
+├── errors.ts         # SpecwrightError + codes
 ├── storage/
-│   ├── paths.ts      # guarda de caminho
-│   ├── files.ts      # leitura, escrita atômica, criação exclusiva
-│   └── markdown.ts   # frontmatter + divisão em seções
-├── specs/            # parser de spec, tools de spec, parser de diff
-├── memory/           # Fase 2
-└── context/          # Fase 3
-tests/                # espelha src/; fixtures em tests/fixtures/
+│   ├── paths.ts      # path guard
+│   ├── files.ts      # reading, atomic write, exclusive creation
+│   └── markdown.ts   # frontmatter + splitting into sections
+├── specs/            # spec parser, spec tools, diff parser
+├── memory/           # Phase 2
+└── context/          # Phase 3
+tests/                # mirrors src/; fixtures in tests/fixtures/
 ```
 
-Regras de dependência:
-- `specs`, `memory` e `context` dependem só de `storage` e `errors`, e não dependem entre si.
-- A exceção é `context`, que consome as funções públicas de `specs` e `memory`.
-- `index.ts` é o único arquivo que conhece todos os módulos.
-- Cada módulo exporta uma função `register(server, deps)` que registra as próprias tools.
+Dependency rules:
+- `specs`, `memory` and `context` depend only on `storage` and `errors`, and do not depend on each other.
+- The exception is `context`, which consumes the public functions of `specs` and `memory`.
+- `index.ts` is the only file that knows all the modules.
+- Each module exports a function `register(server, deps)` that registers its own tools.
 
-## 4. Fluxo de dados
+## 4. Data flow
 
-**Leitura** (ex.: `get_spec`)
-1. O SDK valida a entrada com o schema zod da tool.
-2. A tool resolve `specs/<spec_id>.md` por `storage/paths`. Como o id é igual ao nome do arquivo, não há busca.
-3. `storage/markdown` separa o frontmatter das seções, e a tool recorta a seção pedida.
-4. Se a resposta passar de `maxResponseChars`, ela é truncada com `truncated: true`.
+**Read** (e.g., `get_spec`)
+1. The SDK validates the input with the tool's zod schema.
+2. The tool resolves `specs/<spec_id>.md` via `storage/paths`. Since the id equals the file name, there is no search.
+3. `storage/markdown` separates the frontmatter from the sections, and the tool cuts out the requested section.
+4. If the response exceeds `maxResponseChars`, it is truncated with `truncated: true`.
 
-**Escrita** (ex.: `set_criterion_status`)
-1. Lê o arquivo bruto (bytes).
-2. Localiza a linha do `AC-n` e troca apenas o caractere do checkbox.
-3. Grava num arquivo temporário na mesma pasta e faz `rename` (operação atômica).
-4. Devolve o novo estado, recalculado a partir do texto gravado.
+**Write** (e.g., `set_criterion_status`)
+1. Reads the raw file (bytes).
+2. Finds the line of the `AC-n` and changes only the checkbox character.
+3. Writes to a temporary file in the same folder and does a `rename` (atomic operation).
+4. Returns the new state, recalculated from the written text.
 
-Leitura, edição e gravação acontecem dentro da mesma chamada. Por isso não há estado em memória que possa ficar desatualizado entre chamadas.
+Reading, editing and writing happen within the same call. For that reason there is no in-memory state that can become stale between calls.
 
-## 5. Armazenamento
+## 5. Storage
 
-Raiz: `SPECWRIGHT_DIR`.
-- Caminho relativo é resolvido contra `process.cwd()` do servidor. O padrão é `.specwright`.
-- O README instrui a usar caminho absoluto quando o cliente não iniciar o servidor na raiz do projeto.
+Root: `SPECWRIGHT_DIR`.
+- A relative path is resolved against the server's `process.cwd()`. The default is `.specwright`.
+- The README instructs to use an absolute path when the client does not start the server at the project root.
 
 ```
 .specwright/
-├── config.json       # opcional
+├── config.json       # optional
 ├── specs/            # <spec-id>.md
-├── decisions/        # NNNN-<slug>.md (criada sob demanda por log_decision)
-└── memory/           # <slug>.md (Fase 2)
+├── decisions/        # NNNN-<slug>.md (created on demand by log_decision)
+└── memory/           # <slug>.md (Phase 2)
 ```
 
-`config.json` é opcional, e todos os campos têm padrão:
+`config.json` is optional, and all fields have defaults:
 
 ```json
 { "maxResponseChars": 20000 }
 ```
 
-Campos desconhecidos são ignorados. O versionamento do `config.json` fica para depois (PRD Q3): a ausência de versão significa v1.
+Unknown fields are ignored. Versioning of `config.json` is deferred (PRD Q3): the absence of a version means v1.
 
-### 5.1 Garantias do `storage/`
-- **Guarda de caminho (NFR-6).** Todo caminho é resolvido com `realpath` e precisa estar dentro da raiz. Para arquivo novo, o `realpath` é feito no diretório pai. Caso contrário, o erro é `PATH_OUTSIDE_ROOT`. Isso cobre `..`, caminhos absolutos e symlinks.
-- **Escrita atômica (NFR-5).** Grava em temporário `.<nome>.<pid>.tmp` na mesma pasta e faz `rename`.
-- **Edição mínima (NFR-5).** Só a linha alvo muda. O resto do arquivo é preservado byte a byte, incluindo fim de linha (LF/CRLF) e BOM.
-- **Criação exclusiva.** Arquivos novos (decisões, memórias) usam a flag `wx`. Em colisão de nome, o próximo número é tentado, até 5 vezes, e depois o erro é `INTERNAL`.
-- **Sem detecção de conflito entre processos.** A premissa é um servidor por projeto, e a janela de corrida fica dentro de uma única chamada. Edições concorrentes do usuário aparecem no diff do Git (PRD N5).
+### 5.1 Guarantees of `storage/`
+- **Path guard (NFR-6).** Every path is resolved with `realpath` and must be inside the root. For a new file, `realpath` is applied to the parent directory. Otherwise the error is `PATH_OUTSIDE_ROOT`. This covers `..`, absolute paths and symlinks.
+- **Atomic write (NFR-5).** Writes to a temporary file `.<name>.<pid>.tmp` in the same folder and does a `rename`.
+- **Minimal edit (NFR-5).** Only the target line changes. The rest of the file is preserved byte for byte, including line endings (LF/CRLF) and BOM.
+- **Exclusive creation.** New files (decisions, memories) use the `wx` flag. On a name collision, the next number is tried, up to 5 times, and then the error is `INTERNAL`.
+- **No conflict detection between processes.** The premise is one server per project, and the race window stays within a single call. Concurrent edits by the user show up in the Git diff (PRD N5).
 
-## 6. Formatos
+## 6. Formats
 
 ### 6.1 Spec (`specs/<id>.md`)
 
 ```markdown
 ---
-id: auth-login            # obrigatório; ^[a-z0-9][a-z0-9-]*$; igual ao nome do arquivo
-title: Login com e-mail   # obrigatório
+id: auth-login            # required; ^[a-z0-9][a-z0-9-]*$; same as the file name
+title: Login with e-mail  # required
 status: in-progress       # draft | in-progress | done | deprecated
 ---
 
-## Contexto
+## Context
 ...
-## Critérios de aceite
+## Acceptance criteria
 - [x] AC-1: ...
 - [ ] AC-2: ...
-## Fora de escopo
+## Out of scope
 - ...
 ```
 
-Regras de parsing:
-- **Frontmatter.** É o bloco entre as linhas `---` do início do arquivo, lido com `yaml.parse`. O servidor **nunca reserializa** o frontmatter de uma spec existente.
-- **Seções.**
-  - Uma seção vai de um cabeçalho `##` até o próximo `##`, e os `###` internos fazem parte dela.
-  - O texto antes do primeiro `##` não pertence a nenhuma seção.
-  - A chave da seção é o texto do cabeçalho em minúsculas, sem acentos, com espaços trocados por `-`.
-  - `get_spec(section)` aceita a chave ou o texto original.
-- **Aliases fixos.**
-  - `criterios-de-aceite` = `acceptance-criteria`.
-  - `fora-de-escopo` = `out-of-scope`.
-- **Critérios.**
-  - São as linhas da seção de critérios no formato `^\s*[-*] \[( |x|X)\] (AC-\d+):\s*(.+)$`.
-  - Os ids são únicos por spec e estáveis. O servidor nunca renumera.
-  - Linhas de checkbox sem `AC-n` são ignoradas e geram issue.
-- **Fora de escopo.** São os itens de lista da seção correspondente.
-- **Spec inválida.** Uma spec inválida não derruba as outras: aparece em `list_specs` com `valid: false` e `issues: string[]`. Ela é inválida quando:
-  - falta o frontmatter, `id` ou `title`;
-  - o `id` é diferente do nome do arquivo;
-  - o `status` está fora do enum;
-  - há `AC` duplicado;
-  - há cabeçalho `##` duplicado.
+Parsing rules:
+- **Frontmatter.** It is the block between the `---` lines at the start of the file, read with `yaml.parse`. The server **never re-serializes** the frontmatter of an existing spec.
+- **Sections.**
+  - A section goes from a `##` heading to the next `##`, and the inner `###` headings are part of it.
+  - Text before the first `##` does not belong to any section.
+  - The section key is the heading text in lowercase, without accents, with spaces replaced by `-`.
+  - `get_spec(section)` accepts the key or the original text.
+- **Fixed aliases.** The Portuguese headings from the original specs are accepted as aliases of the English keys:
+  - `acceptance-criteria` (primary) — alias `criterios-de-aceite`.
+  - `out-of-scope` (primary) — alias `fora-de-escopo`.
+- **Criteria.**
+  - They are the lines of the criteria section in the format `^\s*[-*] \[( |x|X)\] (AC-\d+):\s*(.+)$`.
+  - The ids are unique per spec and stable. The server never renumbers them.
+  - Checkbox lines without `AC-n` are ignored and generate an issue.
+- **Out of scope.** These are the list items of the corresponding section.
+- **Invalid spec.** An invalid spec does not break the others: it appears in `list_specs` with `valid: false` and `issues: string[]`. It is invalid when:
+  - the frontmatter, `id` or `title` is missing;
+  - the `id` differs from the file name;
+  - the `status` is outside the enum;
+  - there is a duplicate `AC`;
+  - there is a duplicate `##` heading.
 
-  Escrita numa spec inválida é recusada com `INVALID_SPEC`.
+  Writing to an invalid spec is refused with `INVALID_SPEC`.
 
-### 6.2 Decisão (`decisions/NNNN-<slug>.md`)
+### 6.2 Decision (`decisions/NNNN-<slug>.md`)
 
-Arquivo criado por `log_decision`, com frontmatter gerado por `yaml.stringify` (valores escapados):
+File created by `log_decision`, with frontmatter generated by `yaml.stringify` (escaped values):
 
 ```markdown
 ---
-id: "0007"              # string, para o YAML não ler como número
+id: "0007"              # string, so YAML does not read it as a number
 spec_id: auth-login
-title: Bloqueio por conta, não por IP
-date: 2026-10-21        # data local de criação
-status: accepted        # accepted | superseded (superseded é editado por humanos)
+title: Lock by account, not by IP
+date: 2026-10-21        # local creation date
+status: accepted        # accepted | superseded (superseded is edited by humans)
 ---
-## Contexto
-## Decisão
-## Consequências
+## Context
+## Decision
+## Consequences
 ```
 
-- `NNNN` é o maior número existente + 1, com 4 dígitos.
-- O `slug` vem do título: sem acentos, minúsculas, `[a-z0-9-]`, no máximo 50 caracteres.
-- Seções vazias (`context` ou `consequences` ausentes) são omitidas.
+- `NNNN` is the highest existing number + 1, with 4 digits.
+- The `slug` comes from the title: without accents, lowercase, `[a-z0-9-]`, at most 50 characters.
+- Empty sections (`context` or `consequences` missing) are omitted.
 
-## 7. Contrato das tools
+## 7. Tool contract
 
-Convenções:
-- A entrada é validada com zod.
-- Listagens nunca incluem o corpo.
-- Erros saem como `isError: true` com `{ code, message, hint }`.
-- A descrição de cada tool tem no máximo 2 frases e diz **quando** usá-la.
+Conventions:
+- Input is validated with zod.
+- Listings never include the body.
+- Errors come out as `isError: true` with `{ code, message, hint }`.
+- Each tool's description has at most 2 sentences and says **when** to use it.
 
-### Fase 1
+### Phase 1
 
-| Tool | Entrada | Saída |
+| Tool | Input | Output |
 |---|---|---|
 | `list_specs` | `status?` | `[{ id, title, status, valid, issues?, criteria: {done, total} }]` |
 | `get_spec` | `spec_id`, `section?` | `{ id, title, status, section?, content, truncated? }` |
-| `list_open_requirements` | `spec_id?` | `[{ spec_id, ac_id, text }]` (specs inválidas ficam de fora) |
+| `list_open_requirements` | `spec_id?` | `[{ spec_id, ac_id, text }]` (invalid specs are left out) |
 | `set_criterion_status` | `spec_id`, `ac_id`, `done: boolean` | `{ spec_id, ac_id, done, changed, criteria: {done, total} }` |
 | `log_decision` | `spec_id`, `title`, `decision`, `context?`, `consequences?` | `{ id, path }` |
 | `check_task_against_spec` | `spec_id`, `diff` | `{ spec_id, open_criteria, met_criteria, out_of_scope, diff_summary }` |
 
-- **`get_spec` sem `section`** devolve o corpo inteiro, sem o frontmatter.
-- **`set_criterion_status`** é idempotente: se o estado pedido já for o atual, devolve `changed: false` e não grava.
-- **`log_decision`** valida que a spec existe (`SPEC_NOT_FOUND`) e cria `decisions/` se a pasta faltar.
-- **`check_task_against_spec`** não julga nada.
-  - Faz parse do diff unificado em texto, sem depender de `git`, e devolve `diff_summary = { files: [{ path, added, removed, hunks }], totals: { files, added, removed } }`.
-  - Devolve também os critérios abertos e atendidos e os itens de "Fora de escopo".
-  - Diff vazio, ou sem nenhum cabeçalho `diff --git`/`---`/`+++` reconhecível, gera `INVALID_DIFF`.
+- **`get_spec` without `section`** returns the whole body, without the frontmatter.
+- **`set_criterion_status`** is idempotent: if the requested state is already the current one, it returns `changed: false` and does not write.
+- **`log_decision`** validates that the spec exists (`SPEC_NOT_FOUND`) and creates `decisions/` if the folder is missing.
+- **`check_task_against_spec`** judges nothing.
+  - It parses the unified diff as text, without depending on `git`, and returns `diff_summary = { files: [{ path, added, removed, hunks }], totals: { files, added, removed } }`.
+  - It also returns the open and met criteria and the items of "Out of scope".
+  - An empty diff, or one without any recognizable `diff --git`/`---`/`+++` header, produces `INVALID_DIFF`.
 
-### Fase 2 (detalhada na spec correspondente)
-- `save_memory(type, title, body, tags?)` grava `memory/<slug>.md`. `type` ∈ `convention | learning | pitfall`.
-- `search_memory(query, type?, limit?)` faz busca textual sobre memórias e decisões. O ranking pesa título > tags > corpo, e a tool devolve trechos.
+### Phase 2 (detailed in its own spec)
+- `save_memory(type, title, body, tags?)` writes `memory/<slug>.md`. `type` ∈ `convention | learning | pitfall`.
+- `search_memory(query, type?, limit?)` performs text search over memories and decisions. The ranking weighs title > tags > body, and the tool returns excerpts.
 - `list_decisions(spec_id?, from?, to?)`.
 
-### Fase 3 (detalhada na spec correspondente)
-- `pack_context(task, budget_tokens?)` seleciona seções de spec e memórias por correspondência de termos. Lista arquivos candidatos por nome e caminho e corta tudo até o orçamento.
-- A estimativa de tokens é `ceil(chars / 4)`, até que se decida a PRD Q1.
+### Phase 3 (detailed in its own spec)
+- `pack_context(task, budget_tokens?)` selects spec sections and memories by term matching. It lists candidate files by name and path and cuts everything to the budget.
+- The token estimate is `ceil(chars / 4)`, until PRD Q1 is decided.
 
-## 8. Erros
+## 8. Errors
 
-| Código | Quando |
+| Code | When |
 |---|---|
-| `NOT_INITIALIZED` | a raiz `SPECWRIGHT_DIR` não existe (hint: criar `.specwright/specs/`) |
-| `SPEC_NOT_FOUND` | `spec_id` inexistente |
-| `SECTION_NOT_FOUND` | a seção não existe (hint: lista as chaves disponíveis) |
-| `CRITERION_NOT_FOUND` | o `ac_id` não existe na spec |
-| `INVALID_SPEC` | escrita numa spec inválida (hint: lista as `issues`) |
-| `INVALID_DIFF` | diff vazio ou fora do formato unificado |
-| `PATH_OUTSIDE_ROOT` | o caminho resolve fora da raiz |
-| `INTERNAL` | erro de I/O inesperado; a mensagem não expõe caminho absoluto |
+| `NOT_INITIALIZED` | the root `SPECWRIGHT_DIR` does not exist (hint: create `.specwright/specs/`) |
+| `SPEC_NOT_FOUND` | `spec_id` does not exist |
+| `SECTION_NOT_FOUND` | the section does not exist (hint: lists the available keys) |
+| `CRITERION_NOT_FOUND` | the `ac_id` does not exist in the spec |
+| `INVALID_SPEC` | write to an invalid spec (hint: lists the `issues`) |
+| `INVALID_DIFF` | empty diff or outside the unified format |
+| `PATH_OUTSIDE_ROOT` | the path resolves outside the root |
+| `INTERNAL` | unexpected I/O error; the message does not expose an absolute path |
 
-Entrada que viola o schema zod é rejeitada pelo próprio SDK, antes de chegar à tool.
+Input that violates the zod schema is rejected by the SDK itself, before reaching the tool.
 
-## 9. Casos de borda
+## 9. Edge cases
 
-Esta seção é a fonte da *Review Focus* de cada plano. O plano escolhe os casos que tocam a sua spec e adiciona um teste para cada um.
+This section is the source of the *Review Focus* of each plan. The plan chooses the cases that touch its spec and adds a test for each one.
 
-- Arquivos com CRLF, com BOM UTF-8, vazios ou só com frontmatter.
-- Cabeçalhos com acento, emoji ou espaços duplos; seção pedida com acento (`critérios de aceite`).
-- `spec_id` com `../`, maiúsculas, barra ou caminho absoluto.
-- Symlink dentro de `specs/` apontando para fora da raiz.
-- Spec sem a seção de critérios (`criteria: {done: 0, total: 0}`, sem erro).
-- `AC-10` e `AC-1` na mesma spec (o match tem de ser exato, não por prefixo).
-- Diff com arquivo renomeado, arquivo binário, arquivo novo ou apagado (`/dev/null`) e hunks múltiplos.
-- Diff enorme: o `diff_summary` continua pequeno, porque nunca inclui o conteúdo das linhas.
-- Caminho no Windows (`\`) na guarda de caminho.
+- Files with CRLF, with UTF-8 BOM, empty, or with only frontmatter.
+- Headings with accents, emoji or double spaces; requested section with an accent (`critérios de aceite`, the Portuguese alias, checked for accent stripping).
+- `spec_id` with `../`, uppercase letters, a slash or an absolute path.
+- Symlink inside `specs/` pointing outside the root.
+- Spec without the criteria section (`criteria: {done: 0, total: 0}`, no error).
+- `AC-10` and `AC-1` in the same spec (the match must be exact, not by prefix).
+- Diff with a renamed file, binary file, new or deleted file (`/dev/null`), and multiple hunks.
+- Huge diff: the `diff_summary` stays small, because it never includes the content of the lines.
+- Windows path (`\`) in the path guard.
 
-## 10. Estratégia de testes
+## 10. Testing strategy
 
-O desenvolvimento segue **TDD**: cada `AC-n` de uma spec ganha um teste, escrito antes do código, que precisa falhar pelo motivo esperado antes da implementação. O nome do teste cita o id (`AC-3: ...`).
+Development follows **TDD**: each `AC-n` of a spec gets a test, written before the code, that must fail for the expected reason before the implementation. The test name cites the id (`AC-3: ...`).
 
-- **Unitário:** guarda de caminho, escrita atômica, frontmatter e seções, extração de critérios, parser de diff.
-- **Integração:** cada tool roda contra uma cópia de `tests/fixtures/<cenário>/` num `tmpdir`. Os testes não leem o `.specwright/` real do repositório, porque ele muda conforme os critérios são marcados.
-- **Contrato MCP:** um teste sobe `dist/index.js` via stdio com o cliente do SDK e chama cada tool registrada.
-- **NFR mensuráveis em teste:**
-  - NFR-3: o JSON de `tools/list` tem no máximo 12.000 caracteres.
-  - NFR-7: um fixture gerado com 500 specs é lido no tempo-alvo.
-- **Dogfooding:** é um teste manual de fumaça, ao fim de cada spec, com o próprio Specwright apontando para o repositório. Não substitui a suíte.
-- **Gate de conclusão:** `npm test` (a suíte inteira) e `tsc --noEmit` verdes, com a saída anexada ao relatório da spec.
+- **Unit:** path guard, atomic write, frontmatter and sections, criteria extraction, diff parser.
+- **Integration:** each tool runs against a copy of `tests/fixtures/<scenario>/` in a `tmpdir`. The tests do not read the repository's real `.specwright/`, because it changes as the criteria are checked off.
+- **MCP contract:** a test starts `dist/index.js` over stdio with the SDK client and calls each registered tool.
+- **Measurable NFRs in tests:**
+  - NFR-3: the `tools/list` JSON has at most 12,000 characters.
+  - NFR-7: a fixture generated with 500 specs is read within the target time.
+- **Dogfooding:** a manual smoke test, at the end of each spec, with Specwright itself pointing at the repository. It does not replace the suite.
+- **Completion gate:** `npm test` (the whole suite) and `tsc --noEmit` green, with the output attached to the spec's report.
 
-## 11. Build e distribuição
+## 11. Build and distribution
 
-- `tsc` gera `dist/`. A entrada é `dist/index.js`, e o campo `bin` permite usar via `npx`.
-- O pacote npm se chamará provisoriamente `specwright-mcp`. O nome estava livre em 2026-10-21; revalidar antes de publicar.
-- Uso previsto: `claude mcp add specwright -- npx -y specwright-mcp`, com `SPECWRIGHT_DIR` opcional.
+- `tsc` generates `dist/`. The entry point is `dist/index.js`, and the `bin` field allows use via `npx`.
+- The npm package will be provisionally named `specwright-mcp`. The name was free on 2026-10-21; re-check before publishing.
+- Intended use: `claude mcp add specwright -- npx -y specwright-mcp`, with `SPECWRIGHT_DIR` optional.
 
-## 12. Segurança
+## 12. Security
 
-- O servidor não usa rede, não executa comandos e não lê fora da raiz (§2, §5.1).
-- O conteúdo de specs e memórias é dado, e o servidor nunca o interpreta como instrução.
-- O `spec_id` é restrito por regex no schema, antes de qualquer acesso a disco.
+- The server does not use the network, does not run commands and does not read outside the root (§2, §5.1).
+- The content of specs and memories is data, and the server never interprets it as an instruction.
+- The `spec_id` is restricted by regex in the schema, before any disk access.
 
-## 13. Rastreabilidade
+## 13. Traceability
 
-| Requisito | Componente | Spec (Roadmap) |
+| Requirement | Component | Spec (Roadmap) |
 |---|---|---|
 | NFR-9, NFR-10 (base) | `package.json`, `src/index.ts`, CI | 1 `project-foundation` |
 | FR-1, FR-2, FR-3, NFR-4, NFR-6, NFR-8 | `storage/paths`, `storage/markdown`, `specs/` | 2 `spec-reading` |
 | FR-4, FR-6, NFR-5 | `storage/files`, `specs/` | 3 `acceptance-criteria` |
 | FR-7 | `specs/` | 4 `decision-log` |
 | FR-5 | `specs/diff` | 5 `check-task` |
-| NFR-3, NFR-7 | testes transversais | 2 (base) e revisados em 5 |
-| FR-8 a FR-10 | `memory/` | Fase 2 |
-| FR-11 | `context/` | Fase 3 |
+| NFR-3, NFR-7 | cross-cutting tests | 2 (base) and reviewed in 5 |
+| FR-8 to FR-10 | `memory/` | Phase 2 |
+| FR-11 | `context/` | Phase 3 |
 
-## 14. Questões em aberto
+## 14. Open questions
 
-- **Q1 (decidir na spec 5).** Como o diff chega ao `check_task_against_spec`?
-  - Hoje o agente passa o diff como argumento, o que custa os tokens do diff na chamada (tensão com a meta G3).
-  - A alternativa é aceitar `base_ref` e o servidor ler o diff do Git. Isso exige `child_process` (proibido em §2) ou uma biblioteca de Git (nova dependência).
-  - Recomendação provisória: manter o argumento e medir o custo no dogfooding.
+- **Q1 (decide in spec 5).** How does the diff reach `check_task_against_spec`?
+  - Today the agent passes the diff as an argument, which costs the diff's tokens in the call (tension with goal G3).
+  - The alternative is to accept `base_ref` and have the server read the diff from Git. That requires `child_process` (forbidden in §2) or a Git library (a new dependency).
+  - Provisional recommendation: keep the argument and measure the cost during dogfooding.

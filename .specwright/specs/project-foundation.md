@@ -1,27 +1,27 @@
 ---
 id: project-foundation
-title: Fundação do projeto (repositório, estrutura, build, CI)
+title: Project foundation (repository, structure, build, CI)
 status: in-progress
 ---
 
-## Contexto
-Primeira spec do [Roadmap](../../docs/03-roadmap.md). Ela cria a base sobre a qual as specs seguintes são desenvolvidas com TDD: o repositório, a estrutura de pastas do TRD §3, o build, o CI e um servidor MCP que sobe por stdio, ainda sem nenhuma tool. Requisitos atendidos: NFR-9 (portabilidade) e a base do NFR-10 (suíte de testes e gate de verificação).
+## Context
+First spec of the [Roadmap](../../docs/03-roadmap.md). It creates the base on which the following specs are developed with TDD: the repository, the folder structure from TRD §3, the build, the CI and an MCP server that starts over stdio, still with no tools. Requirements met: NFR-9 (portability) and the base of NFR-10 (test suite and verification gate).
 
-## Requisitos
-- Repositório privado `ThiagoNascBarros/specwright`, branch padrão `main`.
-- Node.js ≥ 22 (`engines` no `package.json` e `.nvmrc` com `22`). TypeScript `strict`, ESM.
-- Dependências exatamente as do TRD §2:
+## Requirements
+- Private repository `ThiagoNascBarros/specwright`, default branch `main`.
+- Node.js ≥ 22.12 (`engines` in `package.json` and `.nvmrc` with `22`). TypeScript `strict`, ESM.
+- Dependencies exactly those of TRD §2:
   - runtime: `@modelcontextprotocol/server`, `zod`, `yaml`;
-  - desenvolvimento: `typescript`, `vitest`, `@types/node`, `@modelcontextprotocol/client`.
+  - development: `typescript`, `vitest`, `@types/node`, `@modelcontextprotocol/client`.
 - `package.json`:
   - `name: specwright-mcp`, `private: true`, `bin: { "specwright-mcp": "dist/index.js" }`;
-  - scripts `build` (`tsc`), `typecheck` (`tsc --noEmit`) e `test` (build seguido de `vitest run`).
-- `src/index.ts` cria o servidor com `name: "specwright"` e `version` lida do `package.json`, conecta o transporte stdio e não registra tools. Começa com shebang `#!/usr/bin/env node`.
-- Estrutura de pastas:
+  - scripts `build` (`tsc`), `typecheck` (`tsc --noEmit && tsc -p tests`, covering src and tests) and `test` (build followed by `vitest run`).
+- `src/index.ts` creates the server with `name: "specwright"` and `version` read from `package.json`, connects the stdio transport and registers no tools. It starts with the shebang `#!/usr/bin/env node`.
+- Folder structure:
 
 ```
 .github/workflows/ci.yml
-.specwright/specs/            # esta spec
+.specwright/specs/            # this spec
 .specwright/decisions/.gitkeep
 docs/                         # PRD, TRD, Roadmap, ADRs
 docs/superpowers/plans/.gitkeep
@@ -33,39 +33,39 @@ src/context/.gitkeep
 tests/contract/server.test.ts
 tests/fixtures/.gitkeep
 CLAUDE.md
-README.md                     # vazio
+README.md                     # empty
 package.json  package-lock.json  tsconfig.json
 .gitignore  .gitattributes  .nvmrc
 ```
 
-- `.gitattributes`: `* text=auto eol=lf` e `tests/fixtures/** -text`. A segunda regra preserva CRLF e BOM nos fixtures (TRD §9).
+- `.gitattributes`: `* text=auto eol=lf` and `tests/fixtures/** -text`. The second rule preserves CRLF and BOM in the fixtures (TRD §9).
 - `.gitignore`: `node_modules/`, `dist/`, `coverage/`, `*.tmp`.
-- `CLAUDE.md` contém, em até 40 linhas:
-  - onde estão PRD, TRD, Roadmap e ADRs;
-  - o ciclo por spec do Roadmap;
-  - TDD obrigatório;
-  - os comandos `npm run typecheck`, `npm test` e `npm run build`;
-  - as restrições globais do TRD §2, por referência, sem copiar o texto.
-- CI (`ci.yml`): roda em `push` e `pull_request` para `main`, numa matriz Node `22` e `24`, com os passos `npm ci`, `npm run typecheck` e `npm test`.
+- `CLAUDE.md` contains, in up to 40 lines:
+  - where the PRD, TRD, Roadmap and ADRs are;
+  - the per-spec cycle of the Roadmap;
+  - mandatory TDD;
+  - the commands `npm run typecheck`, `npm test` and `npm run build`;
+  - the global constraints of TRD §2, by reference, without copying the text.
+- CI (`ci.yml`): runs on `push` and `pull_request` to `main`, in a Node matrix of `22` and `24`, with the steps `npm ci`, `npm run typecheck` and `npm test`.
 
-## Critérios de aceite
-- [x] AC-1: O repositório privado `ThiagoNascBarros/specwright` existe no GitHub
-- [x] AC-2: `npm ci && npm run build` termina com código 0 e gera `dist/index.js` começando com `#!/usr/bin/env node`
-- [x] AC-3: `npm run typecheck` termina com código 0, com `strict: true` no `tsconfig.json`
-- [x] AC-4: O teste de contrato inicia `node dist/index.js` via stdio com o cliente do SDK e recebe `serverInfo.name === "specwright"` e `serverInfo.version` igual ao `version` do `package.json`
-- [x] AC-5: O teste de contrato confirma que o servidor expõe zero tools: `listTools` devolve lista vazia, ou o servidor não anuncia a capability `tools`
-- [x] AC-6: Todas as pastas e arquivos listados em "Requisitos" existem, e o `package.json` declara exatamente as dependências do TRD §2
-- [x] AC-7: `README.md` existe com 0 bytes
-- [x] AC-8: O CI do GitHub Actions roda verde em Node 22 e 24 na PR desta spec
-- [ ] AC-9: `main` recebe esta spec por PR, com merge feito após o CI verde. Como o repositório está vazio, `main` nasce de um commit inicial que contém só o `README.md` vazio, e a PR parte dele.
+## Acceptance criteria
+- [x] AC-1: The private repository `ThiagoNascBarros/specwright` exists on GitHub
+- [x] AC-2: `npm ci && npm run build` finishes with exit code 0 and generates `dist/index.js` starting with `#!/usr/bin/env node`
+- [x] AC-3: `npm run typecheck` finishes with exit code 0, with `strict: true` in `tsconfig.json`
+- [x] AC-4: The contract test starts `node dist/index.js` over stdio with the SDK client and receives `serverInfo.name === "specwright"` and `serverInfo.version` equal to the `version` of `package.json`
+- [x] AC-5: The contract test confirms that the server exposes zero tools: `listTools` returns an empty list, or the server does not announce the `tools` capability
+- [x] AC-6: All folders and files listed under "Requirements" exist, and `package.json` declares exactly the dependencies of TRD §2
+- [x] AC-7: `README.md` exists with 0 bytes
+- [x] AC-8: The GitHub Actions CI runs green on Node 22 and 24 in this spec's PR
+- [ ] AC-9: `main` receives this spec through a PR, with the merge done after the CI is green. Since the repository is empty, `main` is born from an initial commit that contains only the empty `README.md`, and the PR starts from it.
 
-## Fora de escopo
-- Tools MCP, `config.ts`, `errors.ts`, `storage/*` (spec 2 `spec-reading`)
-- Conteúdo do README
-- Licença (PRD Q2) e publicação no npm
-- Proteção de branch, Dependabot e linter
-- `.mcp.json` para dogfooding (entra na spec 2, quando houver tools)
+## Out of scope
+- MCP tools, `config.ts`, `errors.ts`, `storage/*` (spec 2 `spec-reading`)
+- README content
+- License (PRD Q2) and npm publication
+- Branch protection, Dependabot and linter
+- `.mcp.json` for dogfooding (enters in spec 2, when there are tools)
 
-## Notas
-- O AC-1 foi executado antes da aprovação desta spec, a pedido do usuário. Está registrado como já atendido.
-- O AC-5 aceita as duas formas porque o SDK v2 pode omitir a capability `tools` quando nenhuma tool está registrada. O plano fixa o comportamento real depois de verificá-lo.
+## Notes
+- AC-1 was executed before this spec was approved, at the user's request. It is recorded as already met.
+- AC-5 accepts both forms because the SDK v2 may omit the `tools` capability when no tool is registered. The plan fixes the actual behavior after verifying it.

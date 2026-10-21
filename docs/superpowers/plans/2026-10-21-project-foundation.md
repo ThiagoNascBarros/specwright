@@ -1,49 +1,49 @@
 # Project Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Criar a base do Specwright: repositório com `main`, a estrutura do TRD §3, o build, um servidor MCP stdio sem tools, provado por um teste de contrato, e o CI verde.
+**Goal:** Create the Specwright base: a repository with `main`, the structure of TRD §3, the build, a stdio MCP server with no tools, proven by a contract test, and green CI.
 
-**Architecture:** `src/index.ts` cria um `McpServer` do SDK v2 sem tools e o conecta a um `StdioServerTransport`. O teste de contrato executa `dist/index.js` como processo filho, pelo `StdioClientTransport`, e inspeciona o handshake.
+**Architecture:** `src/index.ts` creates an SDK v2 `McpServer` with no tools and connects it to a `StdioServerTransport`. The contract test runs `dist/index.js` as a child process, through `StdioClientTransport`, and inspects the handshake.
 
-**Tech Stack:** Node ≥ 22, TypeScript (strict, ESM), `@modelcontextprotocol/server` e `@modelcontextprotocol/client` 2.3.x, Vitest, GitHub Actions.
+**Tech Stack:** Node ≥ 22.12, TypeScript (strict, ESM), `@modelcontextprotocol/server` and `@modelcontextprotocol/client` 2.3.x, Vitest, GitHub Actions.
 
 **Spec:** `.specwright/specs/project-foundation.md`
 
 ## Global Constraints
 
-(Copiadas do TRD §2.)
-- Node.js **≥ 22**; TypeScript em modo `strict`; ESM (`"type": "module"`).
-- Dependências de runtime permitidas: `@modelcontextprotocol/server` (v2), `zod` (v4), `yaml` (v2). Qualquer outra exige ADR.
-- Dependências de desenvolvimento: `typescript`, `vitest`, `@types/node` e `@modelcontextprotocol/client` (v2, usado no teste de contrato).
-- Proibido no servidor: rede, `child_process`, chamada a LLM, escrita fora de `SPECWRIGHT_DIR`.
-- Nomes de tool em `snake_case` e em inglês. Mensagens de erro em inglês, com `code` estável.
-- Toda tool devolve JSON compacto em um único bloco de texto.
-- No total, até 10 tools (PRD NFR-2).
+(Copied from TRD §2.)
+- Node.js **≥ 22.12**; TypeScript in `strict` mode; ESM (`"type": "module"`).
+- Allowed runtime dependencies: `@modelcontextprotocol/server` (v2), `zod` (v4), `yaml` (v2). Any other requires an ADR.
+- Development dependencies: `typescript`, `vitest`, `@types/node` and `@modelcontextprotocol/client` (v2, used in the contract test).
+- Forbidden in the server: network, `child_process`, LLM calls, writes outside `SPECWRIGHT_DIR`.
+- Tool names in `snake_case` and in English. Error messages in English, with a stable `code`.
+- Every tool returns compact JSON in a single text block.
+- In total, up to 10 tools (PRD NFR-2).
 
-Fatos do SDK verificados no pacote 2.3.1:
-- **Imports.** `McpServer` vem de `@modelcontextprotocol/server`, e `StdioServerTransport` de `@modelcontextprotocol/server/stdio`. `Client` vem de `@modelcontextprotocol/client`, e `StdioClientTransport` de `@modelcontextprotocol/client/stdio`.
-- **Capability `tools`.** O `McpServer` só anuncia `tools` quando ela é passada em `capabilities`. Isso fixa o AC-5: a asserção é `client.getServerCapabilities()?.tools === undefined`.
-- **Tipos do Node.** No TypeScript ≥ 6, o `tsconfig` precisa de `"types": ["node"]`.
+SDK facts verified in package 2.3.1:
+- **Imports.** `McpServer` comes from `@modelcontextprotocol/server`, and `StdioServerTransport` from `@modelcontextprotocol/server/stdio`. `Client` comes from `@modelcontextprotocol/client`, and `StdioClientTransport` from `@modelcontextprotocol/client/stdio`.
+- **`tools` capability.** `McpServer` announces `tools` only when it is passed in `capabilities`. This fixes AC-5: the assertion is `client.getServerCapabilities()?.tools === undefined`.
+- **Node types.** In TypeScript ≥ 6, the `tsconfig` needs `"types": ["node"]`.
 
 ## Review Focus
 
-1. **stdout poluído.** Qualquer `console.log` no servidor corrompe o JSON-RPC sobre stdio. Toda saída de diagnóstico vai para `stderr`. Teste: o handshake do contrato falharia se houvesse lixo no stdout (coberto pelo próprio AC-4).
-2. **Versão lida errada em `dist/`.** O `package.json` é lido por caminho relativo ao módulo (`new URL('../package.json', import.meta.url)`), nunca ao `cwd`. Teste: o contrato executa o servidor com `cwd` igual a `tests/`, não à raiz.
-3. **Encerramento.** O servidor termina quando o cliente fecha o stdin, em vez de ficar órfão. Teste: depois de `client.close()`, o processo filho sai em menos de 2 s.
-4. **Caminho do binário.** O teste resolve `dist/index.js` a partir de `import.meta.url`, e não por caminho relativo ao `cwd`, para rodar igual no CI.
-5. **Fixtures com CRLF.** A regra `tests/fixtures/** -text` precisa existir antes do primeiro fixture. Verificação: `git check-attr text tests/fixtures/x` imprime `unset`.
+1. **Polluted stdout.** Any `console.log` in the server corrupts JSON-RPC over stdio. All diagnostic output goes to `stderr`. Test: the contract handshake would fail if there were garbage on stdout (covered by AC-4 itself).
+2. **Wrong version read from `dist/`.** `package.json` is read via a path relative to the module (`new URL('../package.json', import.meta.url)`), never relative to the `cwd`. Test: the contract runs the server with `cwd` equal to `tests/`, not the root.
+3. **Shutdown.** The server ends when the client closes stdin, instead of becoming orphaned. Test: after `client.close()`, the child process exits in less than 2 s.
+4. **Binary path.** The test resolves `dist/index.js` from `import.meta.url`, not from a path relative to the `cwd`, so that it runs the same way in CI.
+5. **CRLF fixtures.** The rule `tests/fixtures/** -text` must exist before the first fixture. Verification: `git check-attr text tests/fixtures/x` prints `unset`.
 
 ---
 
-### Task 1: `main` inicial com README vazio (AC-7, base do AC-9)
+### Task 1: Initial `main` with empty README (AC-7, base of AC-9)
 
 **Files:**
 - Create: `README.md` (0 bytes)
 
-- [ ] **Step 1: Criar o commit inicial em `main` e publicar**
+- [ ] **Step 1: Create the initial commit on `main` and publish it**
 
-O repositório está vazio. A branch atual, `spec/project-foundation`, ainda não tem commits, então a ref dela ainda não existe. `docs/` e `.specwright/` ficam no diretório de trabalho, sem ser rastreados.
+The repository is empty. The current branch, `spec/project-foundation`, does not have any commits yet, so its ref does not exist. `docs/` and `.specwright/` stay in the working directory, untracked.
 
 ```bash
 git switch --orphan main
@@ -54,49 +54,49 @@ git push -u origin main
 git switch -c spec/project-foundation
 ```
 
-- [ ] **Step 2: Verificar**
+- [ ] **Step 2: Verify**
 
 Run: `git log --oneline main && wc -c README.md && gh repo view --json defaultBranchRef -q .defaultBranchRef.name`
-Expected: um commit `chore: initial commit`, `0 README.md` e `main`.
+Expected: one commit `chore: initial commit`, `0 README.md` and `main`.
 
 ---
 
-### Task 2: Toolchain + servidor stdio provado por teste de contrato (AC-2, AC-3, AC-4, AC-5)
+### Task 2: Toolchain + stdio server proven by a contract test (AC-2, AC-3, AC-4, AC-5)
 
 **Files:**
-- Create: `package.json`, `package-lock.json` (gerado), `tsconfig.json`, `.gitignore`, `.gitattributes`, `.nvmrc`
+- Create: `package.json`, `package-lock.json` (generated), `tsconfig.json`, `.gitignore`, `.gitattributes`, `.nvmrc`
 - Create: `src/index.ts`
 - Test: `tests/contract/server.test.ts`
 
 **Interfaces:**
-- Produces: o executável `dist/index.js`, que fala MCP por stdio com `serverInfo = { name: "specwright", version: <package.json version> }` e não tem capabilities de tools. As specs seguintes registram tools em `src/index.ts`.
+- Produces: the executable `dist/index.js`, which speaks MCP over stdio with `serverInfo = { name: "specwright", version: <package.json version> }` and has no tools capabilities. The following specs register tools in `src/index.ts`.
 
 - [ ] **Step 1: Toolchain**
 
-O `package.json` tem:
-- `name: "specwright-mcp"`, `version: "0.0.0"`, `private: true`, `type: "module"`, `engines.node: ">=22"` e `bin: { "specwright-mcp": "dist/index.js" }`;
-- os scripts `build: "tsc"`, `typecheck: "tsc --noEmit"`, `pretest: "npm run build"` e `test: "vitest run"`.
+`package.json` has:
+- `name: "specwright-mcp"`, `version: "0.0.0"`, `private: true`, `type: "module"`, `engines.node: ">=22"` and `bin: { "specwright-mcp": "dist/index.js" }`;
+- the scripts `build: "tsc"`, `typecheck: "tsc --noEmit"`, `pretest: "npm run build"` and `test: "vitest run"`.
 
-Instalação:
+Installation:
 
 ```bash
 npm i @modelcontextprotocol/server@^2.3 zod@^4 yaml@^2
 npm i -D typescript vitest @types/node @modelcontextprotocol/client@^2.3
 ```
 
-O `tsconfig.json` tem:
+`tsconfig.json` has:
 - `strict: true`, `target: "ES2023"`, `module: "NodeNext"`, `moduleResolution: "NodeNext"`;
 - `rootDir: "src"`, `outDir: "dist"`, `types: ["node"]`, `skipLibCheck: true`;
 - `include: ["src"]`.
 
-Os testes ficam fora do `tsc`, e o Vitest os transpila.
+Tests stay outside `tsc`, and Vitest transpiles them.
 
-Arquivos de apoio:
+Support files:
 - `.nvmrc`: `22`.
-- `.gitignore`: `node_modules/`, `dist/`, `coverage/` e `*.tmp`.
-- `.gitattributes`: `* text=auto eol=lf` e `tests/fixtures/** -text`.
+- `.gitignore`: `node_modules/`, `dist/`, `coverage/` and `*.tmp`.
+- `.gitattributes`: `* text=auto eol=lf` and `tests/fixtures/** -text`.
 
-- [ ] **Step 2: Escrever o teste de contrato que falha**
+- [ ] **Step 2: Write the contract test that fails**
 
 ```ts
 // tests/contract/server.test.ts
@@ -141,27 +141,27 @@ describe('project-foundation contract', () => {
 });
 ```
 
-- [ ] **Step 3: Rodar e ver falhar**
+- [ ] **Step 3: Run and see it fail**
 
 Run: `npm test`
-Expected: FAIL. O `tsc` não encontra entradas (`src/index.ts` ainda não existe), ou o teste falha ao executar `dist/index.js`.
+Expected: FAIL. `tsc` finds no inputs (`src/index.ts` does not exist yet), or the test fails when executing `dist/index.js`.
 
-- [ ] **Step 4: Implementar `src/index.ts`**
+- [ ] **Step 4: Implement `src/index.ts`**
 
-O arquivo:
-- começa com `#!/usr/bin/env node`;
-- lê `version` com `JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))`;
-- cria `new McpServer({ name: 'specwright', version })` sem `capabilities`;
-- faz `await server.connect(new StdioServerTransport())`.
+The file:
+- starts with `#!/usr/bin/env node`;
+- reads `version` with `JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))`;
+- creates `new McpServer({ name: 'specwright', version })` without `capabilities`;
+- does `await server.connect(new StdioServerTransport())`.
 
-Para os erros de inicialização, usa `console.error` e `process.exit(1)`. Nada pode escrever em stdout.
+For startup errors, it uses `console.error` and `process.exit(1)`. Nothing may write to stdout.
 
-Se o teste de encerramento falhar porque o processo não sai sozinho, registre `process.stdin.on('close', () => process.exit(0))`.
+If the shutdown test fails because the process does not exit on its own, register `process.stdin.on('close', () => process.exit(0))`.
 
-- [ ] **Step 5: Rodar e ver passar**
+- [ ] **Step 5: Run and see it pass**
 
 Run: `npm test && npm run typecheck && head -1 dist/index.js`
-Expected: 3 testes passando, typecheck com código 0 e a linha `#!/usr/bin/env node`.
+Expected: 3 tests passing, typecheck with exit code 0, and the line `#!/usr/bin/env node`.
 
 - [ ] **Step 6: Commit**
 
@@ -172,22 +172,22 @@ git commit -m "feat: bootstrap stdio MCP server with contract test"
 
 ---
 
-### Task 3: Estrutura de pastas, CLAUDE.md e documentação (AC-6)
+### Task 3: Folder structure, CLAUDE.md and documentation (AC-6)
 
 **Files:**
 - Create: `src/storage/.gitkeep`, `src/specs/.gitkeep`, `src/memory/.gitkeep`, `src/context/.gitkeep`
-- Create: `tests/fixtures/.gitkeep`, `.specwright/decisions/.gitkeep`, `docs/superpowers/plans/` (este plano já está nela)
+- Create: `tests/fixtures/.gitkeep`, `.specwright/decisions/.gitkeep`, `docs/superpowers/plans/` (this plan is already in it)
 - Create: `CLAUDE.md`
 - Add: `docs/**`, `.specwright/specs/project-foundation.md`
 
-- [ ] **Step 1: Criar as pastas com `.gitkeep`** e escrever o `CLAUDE.md` (até 40 linhas). Ele contém:
-  - os caminhos `docs/01-prd.md`, `docs/02-trd.md`, `docs/03-roadmap.md` e `docs/adr/`;
-  - a tabela "Ciclo por spec" do Roadmap, por referência;
-  - a regra "TDD obrigatório: todo `AC-n` tem teste que cita o id e que falhou primeiro";
-  - os comandos `npm run typecheck`, `npm test` e `npm run build`;
-  - a frase "Restrições globais: TRD §2".
+- [ ] **Step 1: Create the folders with `.gitkeep`** and write `CLAUDE.md` (up to 40 lines). It contains:
+  - the paths `docs/01-prd.md`, `docs/02-trd.md`, `docs/03-roadmap.md` and `docs/adr/`;
+  - the "Per-spec cycle" table of the Roadmap, by reference;
+  - the rule "TDD mandatory: every `AC-n` has a test that cites the id and that failed first";
+  - the commands `npm run typecheck`, `npm test` and `npm run build`;
+  - the phrase "Global constraints: TRD §2".
 
-- [ ] **Step 2: Verificar a estrutura e as dependências**
+- [ ] **Step 2: Verify the structure and dependencies**
 
 ```bash
 for p in .github/workflows .specwright/specs/project-foundation.md .specwright/decisions/.gitkeep docs/superpowers/plans src/index.ts src/storage/.gitkeep src/specs/.gitkeep src/memory/.gitkeep src/context/.gitkeep tests/contract/server.test.ts tests/fixtures/.gitkeep CLAUDE.md README.md package-lock.json tsconfig.json .gitignore .gitattributes .nvmrc; do test -e "$p" || echo "MISSING $p"; done
@@ -196,8 +196,8 @@ git check-attr text tests/fixtures/x
 ```
 
 Expected:
-- nenhum `MISSING`, exceto `.github/workflows`, que nasce na Task 4;
-- a linha `@modelcontextprotocol/server,yaml,zod | @modelcontextprotocol/client,@types/node,typescript,vitest`;
+- no `MISSING`, except `.github/workflows`, which is created in Task 4;
+- the line `@modelcontextprotocol/server,yaml,zod | @modelcontextprotocol/client,@types/node,typescript,vitest`;
 - `tests/fixtures/x: text: unset`.
 
 - [ ] **Step 3: Commit**
@@ -209,31 +209,41 @@ git commit -m "docs: add PRD, TRD, roadmap, ADRs, foundation spec and project la
 
 ---
 
-### Task 4: CI, PR e merge (AC-8, AC-9)
+### Task 4: CI, PR and merge (AC-8, AC-9)
 
 **Files:**
 - Create: `.github/workflows/ci.yml`
 
-- [ ] **Step 1: Escrever o workflow.**
-  - Gatilhos: `on: push` e `pull_request` para `branches: [main]`.
-  - Job `test` em `ubuntu-latest`, com matriz `node: [22, 24]`.
-  - Passos: `actions/checkout@v4`, `actions/setup-node@v4` (`node-version: ${{ matrix.node }}`, `cache: npm`), `npm ci`, `npm run typecheck` e `npm test`.
+- [ ] **Step 1: Write the workflow.**
+  - Triggers: `on: push` and `pull_request` for `branches: [main]`.
+  - Job `test` on `ubuntu-latest`, with matrix `node: [22, 24]`.
+  - Steps: `actions/checkout@v4`, `actions/setup-node@v4` (`node-version: ${{ matrix.node }}`, `cache: npm`), `npm ci`, `npm run typecheck` and `npm test`.
 
-- [ ] **Step 2: Commit, push e abrir a PR**
+- [ ] **Step 2: Commit, push and open the PR**
 
 ```bash
 git add .github/workflows/ci.yml
 git commit -m "ci: typecheck and test on Node 22 and 24"
 git push -u origin spec/project-foundation
-gh pr create --base main --title "spec: project-foundation" --body "Implementa .specwright/specs/project-foundation.md"
+gh pr create --base main --title "spec: project-foundation" --body "Implements .specwright/specs/project-foundation.md"
 ```
 
-- [ ] **Step 3: Verificar o CI**
+- [ ] **Step 3: Verify the CI**
 
 Run: `gh pr checks --watch`
-Expected: `test (22)` e `test (24)` com `pass`.
+Expected: `test (22)` and `test (24)` with `pass`.
 
-- [ ] **Step 4: Fechar a spec (Roadmap etapa 5).** Isto acontece depois da verificação, com o skill `superpowers:finishing-a-development-branch`:
-  - na spec, marcar os ACs 2 a 9 com `[x]` e mudar `status: done`;
-  - no Roadmap, marcar a spec 1 com `[x]`;
-  - fazer o merge da PR, após o seu OK.
+- [ ] **Step 4: Close the spec (Roadmap step 5).** This happens after verification, with the skill `superpowers:finishing-a-development-branch`:
+  - in the spec, check off ACs 2 to 9 with `[x]` and change `status: done`;
+  - in the Roadmap, check off spec 1 with `[x]`;
+  - merge the PR, after your OK.
+
+---
+
+## Deviations
+
+Changes made during implementation that differ from the steps above:
+
+- **(a) `@types/node` pinned to `^22`** instead of the latest (26), so the types match the Node floor.
+- **(b) `engines.node` raised to `>=22.12`**, the floor required by Vitest 5 (`^22.12`). This applies to the Node floor everywhere in the docs.
+- **(c) Typecheck covers tests too.** `npm run typecheck` is now `tsc --noEmit && tsc -p tests`, using `tests/tsconfig.json`, instead of `tsc --noEmit` on `src` only.
