@@ -33,6 +33,24 @@ export interface Spec {
   outOfScope: string[];
 }
 
+export type FileChangeStatus = 'added' | 'deleted' | 'modified' | 'renamed';
+
+/** Per-file summary of a unified diff; never carries line content. */
+export interface FileChange {
+  path: string;
+  old_path?: string;
+  status: FileChangeStatus;
+  added: number;
+  removed: number;
+  hunks: number;
+  binary?: true;
+}
+
+export interface DiffSummary {
+  files: FileChange[];
+  totals: { files: number; added: number; removed: number };
+}
+
 /** One-line summary returned by listings (never includes the body). */
 export interface SpecSummary {
   id: string;
