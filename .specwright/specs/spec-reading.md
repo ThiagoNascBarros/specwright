@@ -1,7 +1,7 @@
 ---
 id: spec-reading
 title: Read specs (list_specs, get_spec)
-status: draft
+status: done
 ---
 
 ## Context
@@ -33,21 +33,21 @@ Spec 2 of the [Roadmap](../../docs/03-roadmap.md). This is the first vertical sl
 - Fixtures under `tests/fixtures/spec-reading/`; integration tests copy them into a `tmpdir` (TRD §10).
 
 ## Acceptance criteria
-- [ ] AC-1: `loadConfig` resolves a relative `SPECWRIGHT_DIR` against `cwd`, uses `.specwright` when unset, and returns `maxResponseChars: 20000` when `config.json` is missing or has no such field
-- [ ] AC-2: Every tool call returns `NOT_INITIALIZED`, with a hint naming `.specwright/specs/`, when the root does not exist
-- [ ] AC-3: `resolveInside` rejects `../x`, absolute paths and a symlink inside the root that points outside it, each with `PATH_OUTSIDE_ROOT`
-- [ ] AC-4: `parseDocument` handles LF, CRLF and a UTF-8 BOM and gives the same sections for all three. Text before the first `##` belongs to no section, and `###` stays inside its parent section.
-- [ ] AC-5: A spec with missing frontmatter, `id` different from the file name, `status` outside the enum, a duplicated `AC-n` or a duplicated `##` heading is reported by `list_specs` with `valid: false` and one issue per problem, and the other specs are still listed
-- [ ] AC-6: `list_specs` returns every spec sorted by `id` with `criteria: {done, total}`. `AC-1` and `AC-10` count as distinct criteria, and a spec with no criteria section gives `{0, 0}`.
-- [ ] AC-7: `list_specs({ status: "done" })` returns only specs with that status
-- [ ] AC-8: `get_spec` without `section` returns the body without the frontmatter
-- [ ] AC-9: `get_spec` with `section` accepts the normalized key (`acceptance-criteria`), the original heading text (`Acceptance criteria`) and a fixed alias (`critérios de aceite`), and returns only that section
-- [ ] AC-10: `get_spec` returns `SPEC_NOT_FOUND` for an unknown id, and `SECTION_NOT_FOUND` with a hint listing the available keys for an unknown section
-- [ ] AC-11: `get_spec` rejects `spec_id` values `../etc`, `Foo`, `a/b` and `/abs` before touching the disk
-- [ ] AC-12: A response longer than `maxResponseChars` is cut to that length and carries `truncated: true`
-- [ ] AC-13: Over stdio, `tools/list` returns exactly `list_specs` and `get_spec`, and the serialized JSON is at most 12,000 characters (NFR-3)
-- [ ] AC-14: With a generated fixture of 500 specs, `list_specs` answers in under 500 ms and `get_spec` in under 200 ms (NFR-7)
-- [ ] AC-15: Smoke dogfooding: with `.mcp.json`, an agent session lists this repo's specs and reads one section of `spec-reading`
+- [x] AC-1: `loadConfig` resolves a relative `SPECWRIGHT_DIR` against `cwd`, uses `.specwright` when unset, and returns `maxResponseChars: 20000` when `config.json` is missing or has no such field
+- [x] AC-2: Every tool call returns `NOT_INITIALIZED`, with a hint naming `.specwright/specs/`, when the root does not exist
+- [x] AC-3: `resolveInside` rejects `../x`, absolute paths and a symlink inside the root that points outside it, each with `PATH_OUTSIDE_ROOT`
+- [x] AC-4: `parseDocument` handles LF, CRLF and a UTF-8 BOM and gives the same sections for all three. Text before the first `##` belongs to no section, and `###` stays inside its parent section.
+- [x] AC-5: A spec with missing frontmatter, `id` different from the file name, `status` outside the enum, a duplicated `AC-n` or a duplicated `##` heading is reported by `list_specs` with `valid: false` and one issue per problem, and the other specs are still listed
+- [x] AC-6: `list_specs` returns every spec sorted by `id` with `criteria: {done, total}`. `AC-1` and `AC-10` count as distinct criteria, and a spec with no criteria section gives `{0, 0}`.
+- [x] AC-7: `list_specs({ status: "done" })` returns only specs with that status
+- [x] AC-8: `get_spec` without `section` returns the body without the frontmatter
+- [x] AC-9: `get_spec` with `section` accepts the normalized key (`acceptance-criteria`), the original heading text (`Acceptance criteria`) and a fixed alias (`critérios de aceite`), and returns only that section
+- [x] AC-10: `get_spec` returns `SPEC_NOT_FOUND` for an unknown id, and `SECTION_NOT_FOUND` with a hint listing the available keys for an unknown section
+- [x] AC-11: `get_spec` rejects `spec_id` values `../etc`, `Foo`, `a/b` and `/abs` before touching the disk
+- [x] AC-12: A response longer than `maxResponseChars` is cut to that length and carries `truncated: true`
+- [x] AC-13: Over stdio, `tools/list` returns exactly `list_specs` and `get_spec`, and the serialized JSON is at most 12,000 characters (NFR-3)
+- [x] AC-14: With a generated fixture of 500 specs, `list_specs` answers in under 500 ms and `get_spec` in under 200 ms (NFR-7)
+- [x] AC-15: Smoke dogfooding: with `.mcp.json`, an agent session lists this repo's specs and reads one section of `spec-reading`
 
 ## Out of scope
 - Writing to specs (`set_criterion_status`, spec 3) and `storage/files`
