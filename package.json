@@ -5,7 +5,7 @@
   "description": "MCP server that keeps specs, decisions and project memory as the source of truth for AI agents.",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "bin": {
     "specwright-mcp": "dist/index.js"
