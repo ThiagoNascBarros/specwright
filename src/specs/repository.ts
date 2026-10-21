@@ -19,6 +19,13 @@ export async function readSpec(root: string, id: string): Promise<{ spec: Spec; 
   return { spec: parseSpec(id, raw), path, raw };
 }
 
+/** Throws INVALID_SPEC (with the issues as hint) unless the spec is valid. */
+export function assertValid(spec: Spec): void {
+  if (!spec.valid) {
+    throw new SpecwrightError('INVALID_SPEC', `Spec "${spec.id}" is invalid.`, `Fix: ${spec.issues.join('; ')}.`);
+  }
+}
+
 /** Reads every spec, sorted by id. Files that escape the root are reported as invalid, never read. */
 export async function readAllSpecs(root: string): Promise<Spec[]> {
   const realRoot = await ensureRoot(root);
