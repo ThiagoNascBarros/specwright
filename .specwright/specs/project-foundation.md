@@ -1,7 +1,7 @@
 ---
 id: project-foundation
 title: Project foundation (repository, structure, build, CI)
-status: in-progress
+status: done
 ---
 
 ## Context
@@ -57,7 +57,7 @@ package.json  package-lock.json  tsconfig.json
 - [x] AC-6: All folders and files listed under "Requirements" exist, and `package.json` declares exactly the dependencies of TRD §2
 - [x] AC-7: `README.md` exists with 0 bytes
 - [x] AC-8: The GitHub Actions CI runs green on Node 22 and 24 in this spec's PR
-- [ ] AC-9: `main` receives this spec through a PR, with the merge done after the CI is green. Since the repository is empty, `main` is born from an initial commit that contains only the empty `README.md`, and the PR starts from it.
+- [x] AC-9: `main` receives this spec through a PR, with the merge done after the CI is green. Since the repository is empty, `main` is born from an initial commit that contains only the empty `README.md`, and the PR starts from it.
 
 ## Out of scope
 - MCP tools, `config.ts`, `errors.ts`, `storage/*` (spec 2 `spec-reading`)
