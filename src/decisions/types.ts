@@ -1,5 +1,3 @@
-export const DECISION_STATUSES = ['accepted', 'superseded'] as const;
-
 export interface NewDecision {
   spec_id: string;
   title: string;
