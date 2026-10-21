@@ -1,29 +1,33 @@
 # Specwright
 
-Servidor MCP (TypeScript, stdio) que mantém specs, decisões e memória de projeto como fonte da verdade para agentes de IA.
+MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as the source of truth for AI agents.
 
-## Documentação
-- Produto (o quê/por quê): `docs/01-prd.md`
-- Técnica (como): `docs/02-trd.md`. As restrições globais estão no **TRD §2** e valem para todo código.
-- Ordem das specs e ciclo de trabalho: `docs/03-roadmap.md`
-- Decisões de arquitetura: `docs/adr/`
-- Specs de desenvolvimento: `.specwright/specs/`
-- Planos de implementação: `docs/superpowers/plans/`
+## Language
+- All code, comments, docs, specs, ADRs, plans, commit messages and PR text are written in English.
+- Conversation with the user may be in Portuguese.
 
-## Como trabalhar
-- **Uma spec por vez**, seguindo a tabela "Ciclo por spec" do Roadmap: spec → plano → TDD → verificação → fechamento. Cada etapa só começa depois da aprovação humana da anterior.
-- **TDD obrigatório:** todo `AC-n` tem um teste que cita o id no nome e que foi visto falhando antes da implementação.
-- Nunca escreva em stdout no servidor. O stdout transporta o JSON-RPC; diagnósticos vão para stderr.
-- Uma spec só fica pronta com a suíte inteira verde e o CI verde.
+## Documentation
+- Product (what/why): `docs/01-prd.md`
+- Technical (how): `docs/02-trd.md`. The global constraints are in **TRD §2** and apply to all code.
+- Spec order and work cycle: `docs/03-roadmap.md`
+- Architecture decisions: `docs/adr/`
+- Development specs: `.specwright/specs/`
+- Implementation plans: `docs/superpowers/plans/`
 
-## Comandos
-- `npm run typecheck`: `tsc --noEmit`
-- `npm test`: build e depois a suíte Vitest inteira
-- `npm run build`: compila para `dist/`
+## How to work
+- **One spec at a time**, following the "Per-spec cycle" table in the Roadmap: spec → plan → TDD → verification → closing. Each step starts only after human approval of the previous one.
+- **TDD is mandatory:** every `AC-n` has a test that cites the id in its name and that was seen failing before the implementation.
+- Never write to stdout in the server. stdout carries JSON-RPC; diagnostics go to stderr.
+- A spec is only ready when the whole suite is green and CI is green.
 
-## Estrutura
-- `src/index.ts`: cria o servidor e registra as tools dos módulos
-- `src/storage/`: única camada que toca o disco
-- `src/specs/`, `src/memory/`, `src/context/`: módulos independentes (TRD §3)
-- `tests/contract/`: testes via stdio
-- `tests/fixtures/`: fixtures; o Git preserva os bytes (CRLF/BOM)
+## Commands
+- `npm run typecheck`: `tsc --noEmit && tsc -p tests` (src and tests)
+- `npm test`: build, then the whole Vitest suite
+- `npm run build`: compiles to `dist/`
+
+## Structure
+- `src/index.ts`: creates the server and registers the tools of the modules
+- `src/storage/`: the only layer that touches the disk
+- `src/specs/`, `src/memory/`, `src/context/`: independent modules (TRD §3)
+- `tests/contract/`: tests over stdio
+- `tests/fixtures/`: fixtures; Git preserves the bytes (CRLF/BOM)

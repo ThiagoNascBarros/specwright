@@ -15,7 +15,7 @@ afterEach(async () => {
 });
 
 async function connect() {
-  // cwd fora da raiz: prova que o servidor não depende do diretório de trabalho
+  // cwd outside the root: proves the server does not depend on the working directory
   const transport = new StdioClientTransport({ command: process.execPath, args: [entry], cwd: testsDir });
   client = new Client({ name: 'contract-test', version: '0.0.0' });
   await client.connect(transport);
