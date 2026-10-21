@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "specwright": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": { "SPECWRIGHT_DIR": ".specwright" }
+    }
+  }
+}
