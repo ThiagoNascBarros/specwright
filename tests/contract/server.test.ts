@@ -8,6 +8,9 @@ const testsDir = fileURLToPath(new URL('../', import.meta.url));
 const entry = fileURLToPath(new URL('../../dist/index.js', import.meta.url));
 const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
+// Every tool the finished server must expose; each spec adds its own.
+export const EXPECTED_TOOLS = ['get_spec', 'list_specs'];
+
 let client: Client | undefined;
 afterEach(async () => {
   await client?.close();
@@ -22,15 +25,25 @@ async function connect() {
   return { client, transport };
 }
 
-describe('project-foundation contract', () => {
-  it('AC-4: reports serverInfo name "specwright" and package.json version', async () => {
+describe('stdio contract', () => {
+  it('project-foundation AC-4: reports serverInfo name "specwright" and package.json version', async () => {
     const { client } = await connect();
     expect(client.getServerVersion()).toMatchObject({ name: 'specwright', version: pkg.version });
   });
 
-  it('AC-5: exposes no tools capability', async () => {
+  it('spec-reading AC-13: exposes exactly the expected tools within the NFR-3 size budget', async () => {
     const { client } = await connect();
-    expect(client.getServerCapabilities()?.tools).toBeUndefined();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name).sort()).toEqual([...EXPECTED_TOOLS].sort());
+    expect(JSON.stringify({ tools }).length).toBeLessThanOrEqual(12000);
+    for (const t of tools) expect(t.description!.split(/(?<=\.)\s+/).length).toBeLessThanOrEqual(2);
+  });
+
+  it('answers a tool call over stdio (NOT_INITIALIZED when run outside a project)', async () => {
+    const { client } = await connect();
+    const r = await client.callTool({ name: 'list_specs', arguments: {} });
+    expect(r.isError).toBe(true);
+    expect((r.content as Array<{ text: string }>)[0].text).toContain('NOT_INITIALIZED');
   });
 
   it('exits after the client closes stdin', async () => {
