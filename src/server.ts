@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import type { Config } from './config.js';
 import * as decisions from './decisions/index.js';
 import { defaultDeps, type Deps } from './deps.js';
+import * as memory from './memory/index.js';
 import * as specs from './specs/index.js';
 
 // Relative to this module, not cwd: the client may launch us from anywhere.
@@ -13,5 +14,6 @@ export function createServer(config: Config, deps: Deps = defaultDeps): McpServe
   const server = new McpServer({ name: 'specwright', version });
   specs.register(server, config);
   decisions.register(server, config, deps);
+  memory.register(server, config, deps);
   return server;
 }
