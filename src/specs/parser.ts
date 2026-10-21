@@ -12,6 +12,8 @@ const CHECKBOX_LINE = /^\s*[-*] \[( |x|X)\]/;
 
 const canonical = (key: string) => ALIASES[key] ?? key;
 
+export const isCriteriaKey = (key: string) => canonical(key) === 'acceptance-criteria';
+
 export function findSection(spec: Pick<Spec, 'sections'>, query: string): Section | undefined {
   const key = canonical(normalizeKey(query));
   return spec.sections.find((s) => canonical(s.key) === key);

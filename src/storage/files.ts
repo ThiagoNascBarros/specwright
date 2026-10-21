@@ -1,4 +1,18 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
+
+/** Writes via a temporary file in the same folder and a rename, so readers never see a partial file (NFR-5). */
+export async function writeAtomic(path: string, text: string): Promise<void> {
+  const tmp = join(dirname(path), `.${basename(path)}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`);
+  try {
+    await writeFile(tmp, text);
+    await rename(tmp, path);
+  } catch (error) {
+    await rm(tmp, { force: true });
+    throw error;
+  }
+}
 
 /** Reads a UTF-8 file, or returns undefined when it does not exist. */
 export async function readTextIfExists(path: string): Promise<string | undefined> {
