@@ -14,6 +14,11 @@ export async function writeAtomic(path: string, text: string): Promise<void> {
   }
 }
 
+/** Creates a new file, failing with EEXIST instead of overwriting one. */
+export async function createExclusive(path: string, text: string): Promise<void> {
+  await writeFile(path, text, { flag: 'wx' });
+}
+
 /** Reads a UTF-8 file, or returns undefined when it does not exist. */
 export async function readTextIfExists(path: string): Promise<string | undefined> {
   try {
