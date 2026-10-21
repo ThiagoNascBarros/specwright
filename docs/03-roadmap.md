@@ -17,14 +17,14 @@ One spec at a time. The next one starts only when the previous one is complete.
 | # | Step | Artifact | Superpowers skill | Gate |
 |---|---|---|---|---|
 | 1 | Write the spec | `.specwright/specs/<id>.md` (format from [TRD §6.1](02-trd.md)) | `brainstorming` | you approve the spec |
-| 2 | Implementation plan | `docs/superpowers/plans/AAAA-MM-DD-<id>.md` | `writing-plans` | you approve the plan and choose the execution mode |
+| 2 | Implementation plan | `docs/superpowers/plans/YYYY-MM-DD-<id>.md` | `writing-plans` | you approve the plan and choose the execution mode |
 | 3 | Implement | code + tests, on a branch | `test-driven-development`, plus `subagent-driven-development` or `executing-plans` | each `AC-n` has a test that failed before passing |
-| 4 | Verify | output of `npm test` and `tsc --noEmit` | `verification-before-completion` | whole suite green, with evidence |
+| 4 | Verify | output of `npm test` and `npm run typecheck` | `verification-before-completion` | whole suite green, with evidence |
 | 5 | Close | criteria checked, decisions recorded, merge | `finishing-a-development-branch` | spec with `status: done` |
 
 **Definition of done for a spec**
 1. All `AC-n` are covered by a test that cites the id and was seen failing before the implementation.
-2. `npm test` (the whole suite) and `tsc --noEmit` are green, and the output is attached to the closing.
+2. `npm test` (the whole suite) and `npm run typecheck` are green, and the output is attached to the closing.
 3. The criteria are checked off in the spec. From spec 3 onward this is done with `set_criterion_status`; in specs 1 and 2, by hand.
 4. Relevant decisions are recorded. From spec 4 onward this is done with `log_decision`; before that, as an ADR in `docs/adr/`.
 5. The smoke dogfooding was run (TRD §10), from spec 2 onward.
