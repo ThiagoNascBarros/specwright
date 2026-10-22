@@ -93,6 +93,7 @@ Refs: SW-3
 | SW-4 | `feature/SW-4-context-packer` | Phase 3: `pack_context`, load suite |
 | SW-5 | `docs/SW-5-open-source-docs` | Open-source documentation, v0.1.0 |
 | SW-6 | `docs/SW-6-git-conventions` | These conventions |
+| SW-7 | `chore/SW-7-dependabot-node-types` | Keep `@types/node` on the Node floor |
 
 ## Code of Conduct
 
