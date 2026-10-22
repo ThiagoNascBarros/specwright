@@ -1,0 +1,39 @@
+name: Bug report
+description: Something does not work as specified
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The tool call you made and the response you got.
+      placeholder: |
+        Called get_spec { "spec_id": "auth", "section": "acceptance-criteria" }
+        Got: { "code": "SECTION_NOT_FOUND", ... }
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: The smallest `.specwright/` content (spec files, config.json) that shows the problem.
+      render: markdown
+  - type: input
+    id: version
+    attributes:
+      label: Specwright version or commit
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS, Node version and MCP client
+      placeholder: macOS 15, Node 24.1, Claude Code 2.x
+    validations:
+      required: true

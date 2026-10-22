@@ -1,8 +1,8 @@
 ---
 id: PRD-001
 title: Specwright — Product Requirements Document
-status: draft
-version: 0.2
+status: accepted
+version: 1.0
 ---
 
 # PRD-001 — Specwright
@@ -125,6 +125,26 @@ Order of the development specs in the [Roadmap](03-roadmap.md).
 
 ## 11. Open questions
 
-- Q1. Format of the `pack_context` token budget (character estimate or real tokenizer). Decide in Phase 3.
-- Q2. Project license (to be defined before the first publication).
-- Q3. Versioning policy for `config.json` and migration of specs between format versions.
+- ~~Q1. Format of the `pack_context` token budget.~~ **Decided** (decision 0007): estimate `ceil(chars / 4)`, with no tokenizer dependency.
+- ~~Q2. Project license.~~ **Decided:** MIT ([LICENSE](../LICENSE)).
+- Q3. Versioning of `config.json` and of the spec format. Still deferred; a file without a version is v1.
+
+## 12. Delivery status (v0.1.0)
+
+Every requirement in §5 and §6 is implemented and covered by tests. The test record of each phase is in [`tdd/`](tdd/).
+
+| Phase | Success signal (§7) | Evidence |
+|---|---|---|
+| 1 | Full cycle on the repository itself | Specs 3–5 were closed with `set_criterion_status`, decisions 0001–0006 were written with `log_decision`, and `check_task_against_spec` summarized a real 353-line diff exactly like `git diff --numstat` |
+| 2 | Memory found again in a new session | The `memory` AC-10 test and the end-to-end stdio workflow test start a second server process and find memories and decisions saved by the first one |
+| 3 | Context within budget | `pack_context` on this repository returned 10 relevant items using 1,487 of 1,500 tokens, plus the cited source files |
+
+Measured NFR-7 medians on a laptop (CI medians in brackets):
+
+| Scenario | Budget | Result |
+|---|---|---|
+| `list_specs`, 500 specs | < 500 ms | 57–85 ms (89–95 ms) |
+| `get_spec` with section, 500 specs | < 200 ms | < 1 ms |
+| `search_memory`, 1,000 memories + 200 decisions | < 300 ms | 137–162 ms (167–200 ms) |
+| `pack_context`, 500 specs + 1,000 memories | < 1 s | 184–190 ms (225–238 ms) |
+| `check_task_against_spec`, 50,000-line diff | < 500 ms | passes |

@@ -1,69 +1,78 @@
 ---
 id: RM-001
 title: Specwright — Roadmap
-status: draft
-version: 0.2
+status: accepted
+version: 1.0
 implements: TRD-001
 ---
 
 # RM-001 — Roadmap
 
-Delivery order of the development specs. This document **is not** an implementation plan: each spec gets its own plan when it is developed.
+This document sets the delivery order of the development specs. It is not an implementation plan.
 
 ## Per-spec cycle
 
-One spec at a time. The next one starts only when the previous one is complete.
+Specs are worked one at a time, and the next one starts only when the previous one is complete.
 
 | # | Step | Artifact | Superpowers skill | Gate |
 |---|---|---|---|---|
-| 1 | Write the spec | `.specwright/specs/<id>.md` (format from [TRD §6.1](02-trd.md)) | `brainstorming` | you approve the spec |
-| 2 | Implementation plan | `docs/superpowers/plans/YYYY-MM-DD-<id>.md` | `writing-plans` | you approve the plan and choose the execution mode |
-| 3 | Implement | code + tests, on a branch | `test-driven-development`, plus `subagent-driven-development` or `executing-plans` | each `AC-n` has a test that failed before passing |
-| 4 | Verify | output of `npm test` and `npm run typecheck` | `verification-before-completion` | whole suite green, with evidence |
-| 5 | Close | criteria checked, decisions recorded, merge | `finishing-a-development-branch` | spec with `status: done` |
+| 1 | Write the spec | `.specwright/specs/<id>.md` (format in [TRD §6.1](02-trd.md)) | `brainstorming` | the spec is approved |
+| 2 | Plan | `docs/superpowers/plans/YYYY-MM-DD-<id>.md`, or the phase's TDD record | `writing-plans` | the plan is approved |
+| 3 | Implement | code and tests, on a branch | `test-driven-development` | each `AC-n` has a test that failed before passing |
+| 4 | Verify | output of `npm test`, `npm run typecheck` and `npm run test:load` | `verification-before-completion` | everything is green, with evidence |
+| 5 | Close | criteria checked, decisions recorded, PR merged | `finishing-a-development-branch` | the spec has `status: done` |
 
 **Definition of done for a spec**
-1. All `AC-n` are covered by a test that cites the id and was seen failing before the implementation.
-2. `npm test` (the whole suite) and `npm run typecheck` are green, and the output is attached to the closing.
-3. The criteria are checked off in the spec. From spec 3 onward this is done with `set_criterion_status`; in specs 1 and 2, by hand.
-4. Relevant decisions are recorded. From spec 4 onward this is done with `log_decision`; before that, as an ADR in `docs/adr/`.
-5. The smoke dogfooding was run (TRD §10), from spec 2 onward.
-6. The branch's CI is green.
+1. Every `AC-n` is covered by a test that cites its id and was seen failing before the implementation.
+2. `npm test`, `npm run typecheck` and `npm run test:load` are green.
+3. The criteria are checked off. From spec 3 on, this is done with `set_criterion_status` itself.
+4. Relevant decisions are recorded. From spec 4 on, this is done with `log_decision` itself; before that, as ADRs.
+5. Smoke dogfooding was run against this repository, from spec 2 on.
+6. CI is green on the PR.
 
-## Phase 1: spec core
+**Process note.** Spec 1 had its own written plan, in [`superpowers/plans/`](superpowers/plans/). The owner then asked for the rest of the project to be finished in one go. From spec 2 on, each phase was implemented test-first, and its record is in [`tdd/`](tdd/) instead of one written plan per spec: the RED evidence, the AC → test map, and the performance and load results.
 
-Spec 1 is the foundation: repository, structure, build, CI and a server that starts with no tools. From spec 2 onward, each spec is a vertical slice: when finished, the server has new tools usable by an agent.
+## Phase 1: spec core — done
 
 | # | Spec id | Delivery | Requirements | Status |
 |---|---|---|---|---|
-| 1 | `project-foundation` | GitHub repository, folder structure from TRD §3, `package.json`, `tsconfig`, CI, stdio server with no tools and contract test | NFR-9, NFR-10 | [x] |
-| 2 | `spec-reading` | `config.ts`, `errors.ts`, `storage/paths` and `storage/markdown`, spec parser, and the tools `list_specs` and `get_spec` | FR-1, FR-2, FR-3, NFR-3, NFR-4, NFR-6, NFR-7, NFR-8 | [x] |
-| 3 | `acceptance-criteria` | `storage/files` (atomic write, minimal edit), `list_open_requirements` and `set_criterion_status` | FR-4, FR-6, NFR-5 | [x] |
-| 4 | `decision-log` | Exclusive file creation and `log_decision` | FR-7 | [x] |
-| 5 | `check-task` | Diff parser and `check_task_against_spec`; decide TRD Q1 | FR-5 | [x] |
+| 1 | `project-foundation` | Repository, folder layout, build, CI, stdio server, contract test | NFR-9, NFR-10 | [x] |
+| 2 | `spec-reading` | Config, errors, path guard, Markdown parser, `list_specs`, `get_spec` | FR-1–FR-3, NFR-3, NFR-4, NFR-6–NFR-8 | [x] |
+| 3 | `acceptance-criteria` | Atomic write, minimal edit, `list_open_requirements`, `set_criterion_status` | FR-4, FR-6, NFR-5 | [x] |
+| 4 | `decision-log` | `decisions` module and `log_decision` | FR-7 | [x] |
+| 5 | `check-task` | Diff parser and `check_task_against_spec`; TRD Q1 decided | FR-5 | [x] |
 
-**Phase 1 done when:** the 5 specs have `status: done`, plus one complete cycle run on the repository itself (PRD §7, Phase 1) and the installation README.
+Test record: [tdd/phase-1.md](tdd/phase-1.md).
 
-## Phase 2: project memory
+## Phase 2: project memory — done
 
-| Spec id | Delivery | Requirements |
-|---|---|---|
-| `memory` | `save_memory` and `search_memory` (over memories and decisions) | FR-8, FR-9 |
-| `decision-list` | `list_decisions` | FR-10 |
+| Spec id | Delivery | Requirements | Status |
+|---|---|---|---|
+| `memory` | `save_memory` and `search_memory` (over memories and decisions) | FR-8, FR-9 | [x] |
+| `decision-list` | `list_decisions` | FR-10 | [x] |
 
-Ends when the Phase 2 success metric (PRD §7) is demonstrated.
+Test record: [tdd/phase-2.md](tdd/phase-2.md).
 
-## Phase 3: Context Packer
+## Phase 3: context packer — done
 
-| Spec id | Delivery | Requirements |
-|---|---|---|
-| `context-pack` | Token budget and `pack_context` | FR-11 |
+| Spec id | Delivery | Requirements | Status |
+|---|---|---|---|
+| `context-pack` | Token budget and `pack_context`; PRD Q1 decided | FR-11, NFR-2 | [x] |
 
-Before starting, decide PRD Q1 (tokenizer).
+Phase 3 also added the stdio load suite, which found and fixed two defects (decisions 0009 and 0010). Test record: [tdd/phase-3.md](tdd/phase-3.md).
+
+## Next (not scheduled)
+
+These items would each need a spec. Each one stays out until real use asks for it:
+- publishing to npm (and dropping `private: true`);
+- versioning of `config.json` and of the spec format (PRD Q3);
+- a cache for very large projects, only if NFR-7 fails in practice (ADR-0004);
+- a `base_ref` option for `check_task_against_spec`, only if passing the diff proves too costly (decision 0005).
 
 ## Documentation milestones
-- [x] PRD-001 (v0.2)
-- [x] TRD-001 (v0.2)
-- [x] ADR-0001 to ADR-0005
-- [x] RM-001 (v0.2)
-- [x] Spec 1 `project-foundation`
+- [x] PRD-001 v1.0
+- [x] TRD-001 v1.0
+- [x] ADR-0001 to ADR-0005, and decisions 0001–0010 in `.specwright/decisions/`
+- [x] RM-001 v1.0
+- [x] TDD records for phases 1, 2 and 3
+- [x] Open-source repository files (README, LICENSE, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CHANGELOG, templates)

@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a change in behavior or a new capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What does an agent or a developer fail to do today? Real examples help most.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The behavior you want, ideally as acceptance criteria (AC-1, AC-2, ...).
+    validations:
+      required: true
+  - type: textarea
+    id: tools
+    attributes:
+      label: Impact on the tool budget
+      description: Specwright keeps at most 10 tools (PRD NFR-2). Does this extend an existing tool, or which one would it replace?
