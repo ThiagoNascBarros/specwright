@@ -80,26 +80,22 @@ Full contracts: [specs/009-speckit-format/contracts/tools.md](specs/009-speckit-
 
 ## Quick start
 
-### 1. Install
+### 1. Install and connect
 
-Requires **Node.js 22.12 or later**.
+Requires **Node.js 22.12 or later**. Open your agent in the Spec Kit project where you want to use Specwright and paste this prompt:
 
-```bash
-git clone https://github.com/ThiagoNascBarros/specwright.git
-cd specwright
-npm ci
-npm run build
+```text
+Install the Specwright MCP server for this project.
+
+1. Run `node --version`. If it is older than 22.12, stop and tell me.
+2. Clone https://github.com/ThiagoNascBarros/specwright.git into a folder outside this project. In that clone, run `npm ci` and then `npm run build`.
+3. Register the server with your MCP client, using the absolute path to `dist/index.js` in that clone. In Claude Code, run this from the root of this project: `claude mcp add specwright -- node <absolute path>/dist/index.js`. In any other client that supports stdio servers, add an entry with `command` set to `node` and that path as the only argument.
+4. Tell me if I need to restart the client, then call `list_features` and show me the result.
 ```
 
-### 2. Add it to your MCP client
+### 2. Configure by hand (optional)
 
-**Claude Code**, from the root of your Spec Kit project:
-
-```bash
-claude mcp add specwright -- node /absolute/path/to/specwright/dist/index.js
-```
-
-Or commit a `.mcp.json` at the project root:
+To commit the configuration instead, add a `.mcp.json` at the project root:
 
 ```json
 {
@@ -113,7 +109,13 @@ Or commit a `.mcp.json` at the project root:
 }
 ```
 
-### 3. Use it with Spec Kit
+A relative `SPECWRIGHT_ROOT` is resolved against the server's working directory, so `.` only works if your client starts servers from the project root. If it does not, use an absolute path, such as `/absolute/path/to/your-project`.
+
+Any MCP client that supports stdio servers works the same way.
+
+### 3. Your first feature
+
+Specs are written by Spec Kit's skills. Specwright reads them. In your agent:
 
 ```text
 /speckit-specify Build a photo organizer with albums grouped by date.
@@ -121,9 +123,13 @@ Or commit a `.mcp.json` at the project root:
 /speckit-tasks
 ```
 
-Then ask your agent: *"Use `list_open_tasks` for `001-photo-albums` US1 and implement them. Before finishing, call `check_against_spec` with your diff and mark each verified task with `set_task_status`."*
+Then paste this prompt:
 
-To try it without Spec Kit, copy [`examples/starter/`](examples/starter/): it holds `specs/001-auth-login/` and a constitution.
+```text
+Use Specwright. Call `list_open_tasks` for the feature you just created, filtered to story US1, and implement those tasks test-first. Before finishing, call `check_against_spec` with your diff, report any requirement that is not met, and mark each verified task with `set_task_status`.
+```
+
+To try it without Spec Kit, copy [`examples/starter/`](examples/starter/) into a project. It holds `specs/001-auth-login/` and a constitution.
 
 ## Recommended agent instructions
 

@@ -95,6 +95,7 @@ Refs: SW-3
 | SW-6 | `docs/SW-6-git-conventions` | These conventions |
 | SW-7 | `chore/SW-7-dependabot-node-types` | Keep `@types/node` on the Node floor |
 | SW-8 | `feature/SW-8-speckit-format` | Spec Kit format, renamed tools, v0.2.0 |
+| SW-9 | `docs/SW-9-readme-prompt-install` | README quick start as agent prompts |
 
 ## Code of Conduct
 
