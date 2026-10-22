@@ -1,6 +1,6 @@
 ---
 id: "0005"
-spec_id: check-task
+feature: 005-check-task
 title: The diff arrives as a tool argument
 date: 2026-10-21
 status: accepted

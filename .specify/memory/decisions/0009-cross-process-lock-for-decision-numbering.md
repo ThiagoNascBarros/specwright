@@ -1,6 +1,6 @@
 ---
 id: "0009"
-spec_id: decision-log
+feature: 004-decision-log
 title: Cross-process lock for decision numbering
 date: 2026-10-21
 status: accepted

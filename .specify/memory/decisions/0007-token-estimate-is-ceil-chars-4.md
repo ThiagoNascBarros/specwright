@@ -1,6 +1,6 @@
 ---
 id: "0007"
-spec_id: context-pack
+feature: 008-context-pack
 title: Token estimate is ceil(chars / 4)
 date: 2026-10-21
 status: accepted

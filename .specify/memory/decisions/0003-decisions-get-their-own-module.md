@@ -1,6 +1,6 @@
 ---
 id: "0003"
-spec_id: decision-log
+feature: 004-decision-log
 title: Decisions get their own module
 date: 2026-10-21
 status: accepted

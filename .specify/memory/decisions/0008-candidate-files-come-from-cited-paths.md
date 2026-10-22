@@ -1,6 +1,6 @@
 ---
 id: "0008"
-spec_id: context-pack
+feature: 008-context-pack
 title: Candidate files come from cited paths
 date: 2026-10-21
 status: accepted

@@ -1,6 +1,6 @@
 ---
 id: "0006"
-spec_id: check-task
+feature: 005-check-task
 title: Only git headers imply a rename
 date: 2026-10-21
 status: accepted

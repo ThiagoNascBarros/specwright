@@ -1,6 +1,6 @@
 ---
 id: "0001"
-spec_id: spec-reading
+feature: 002-spec-reading
 title: Listings return objects, not bare arrays
 date: 2026-10-21
 status: accepted

@@ -1,6 +1,6 @@
 ---
 id: "0002"
-spec_id: spec-reading
+feature: 002-spec-reading
 title: Composition root in src/server.ts
 date: 2026-10-21
 status: accepted

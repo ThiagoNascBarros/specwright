@@ -1,6 +1,6 @@
 ---
 id: "0010"
-spec_id: spec-reading
+feature: 002-spec-reading
 title: Linear response truncation and bounded file reads
 date: 2026-10-21
 status: accepted
