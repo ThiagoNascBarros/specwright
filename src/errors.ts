@@ -41,9 +41,17 @@ export function respond(data: Record<string, unknown>, max: number): ToolResult 
   }
   const key = Object.keys(out).find((k) => Array.isArray(out[k]));
   if (key) {
-    const items = [...(out[key] as unknown[])];
-    out[key] = items;
-    while (items.length && JSON.stringify(out).length > max) items.pop();
+    // Linear: measure the envelope once, then add items while their serialized size fits.
+    const items = out[key] as unknown[];
+    let size = JSON.stringify({ ...out, [key]: [] }).length;
+    let count = 0;
+    for (const item of items) {
+      const extra = JSON.stringify(item).length + (count > 0 ? 1 : 0);
+      if (size + extra > max) break;
+      size += extra;
+      count++;
+    }
+    out[key] = items.slice(0, count);
   }
   return { content: text(out) };
 }
