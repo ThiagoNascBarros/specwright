@@ -1,4 +1,5 @@
-import { mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach } from 'vitest';
@@ -12,7 +13,7 @@ afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!();
 });
 
-/** Creates a temporary project with `files` (paths relative to the project root) and returns its paths. */
+/** Creates a temporary project with `files` (paths relative to the project root). `root` is the project root. */
 export async function makeProject(files: Record<string, string> = {}) {
   const project = await realpath(await mkdtemp(join(tmpdir(), 'specwright-')));
   cleanups.push(() => rm(project, { recursive: true, force: true }));
@@ -21,13 +22,24 @@ export async function makeProject(files: Record<string, string> = {}) {
     await mkdir(dirname(full), { recursive: true });
     await writeFile(full, content);
   }
-  return { project, root: join(project, '.specwright') };
+  return { project, root: project };
 }
 
-export function spec(id: string, body = '', front: Record<string, string> = {}) {
-  const fm = { id, title: `Title of ${id}`, status: 'draft', ...front };
-  const lines = Object.entries(fm).map(([k, v]) => `${k}: ${v}`);
-  return `---\n${lines.join('\n')}\n---\n${body}`;
+/** Copies `tests/fixtures/<name>/` into a temporary project and returns its root. */
+export async function copyFixture(name: string) {
+  const p = await makeProject();
+  await cp(fileURLToPath(new URL(`./fixtures/${name}/`, import.meta.url)), p.root, { recursive: true });
+  return p;
+}
+
+/** A minimal `spec.md` in Spec Kit's template shape. */
+export function specMd(title: string, body = '', status = 'Draft') {
+  return `# Feature Specification: ${title}\n\n**Feature Branch**: \`branch\`\n\n**Created**: 2026-10-21\n\n**Status**: ${status}\n\n**Input**: User description: "x"\n\n${body}`;
+}
+
+/** A minimal `tasks.md` with one phase and the given task lines. */
+export function tasksMd(lines: string[], phase = 'Phase 1: Setup (Shared Infrastructure)') {
+  return `# Tasks: x\n\n## ${phase}\n\n${lines.join('\n')}\n`;
 }
 
 export interface ToolResponse {

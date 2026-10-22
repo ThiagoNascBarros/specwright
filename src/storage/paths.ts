@@ -2,10 +2,13 @@ import { realpath, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { SpecwrightError } from '../errors.js';
 
-const outside = () =>
-  new SpecwrightError('PATH_OUTSIDE_ROOT', 'Path resolves outside the Specwright root.', 'Use a path relative to the root.');
+/** The only top-level folders the server may touch (Spec Kit's layout). */
+export const ALLOWED_TOP_LEVEL = ['specs', '.specify'] as const;
 
-/** Returns the real path of the root, or throws NOT_INITIALIZED when it is not a directory. */
+const outside = () =>
+  new SpecwrightError('PATH_OUTSIDE_ROOT', 'Path is outside specs/ and .specify/.', 'Only Spec Kit folders can be read or written.');
+
+/** Returns the real path of the project root, or throws NOT_INITIALIZED when it is not a directory. */
 export async function ensureRoot(root: string): Promise<string> {
   try {
     const real = await realpath(root);
@@ -15,14 +18,16 @@ export async function ensureRoot(root: string): Promise<string> {
   }
   throw new SpecwrightError(
     'NOT_INITIALIZED',
-    'The Specwright root does not exist.',
-    'Create .specwright/specs/ in the project (or set SPECWRIGHT_DIR to an absolute path).',
+    'The project root does not exist.',
+    'Run `specify init` in the project, or set SPECWRIGHT_ROOT to the project root.',
   );
 }
 
+const firstSegment = (path: string) => path.split(sep)[0];
+
 /**
- * Resolves `rel` inside `root`, following symlinks, and rejects anything that escapes it (NFR-6).
- * A path that does not exist yet is checked through its parent directory.
+ * Resolves `rel` inside the project root, following symlinks, and rejects anything that is
+ * not under specs/ or .specify/ once resolved (NFR-6, FR-001). New files are checked through their parent.
  */
 export async function resolveInside(root: string, rel: string): Promise<string> {
   // Treat backslashes as separators on every platform so "..\\x" cannot slip through on POSIX.
@@ -41,6 +46,7 @@ export async function resolveInside(root: string, rel: string): Promise<string> 
     }
   }
   const fromRoot = relative(realRoot, real);
-  if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) throw outside();
+  if (!fromRoot || fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) throw outside();
+  if (!ALLOWED_TOP_LEVEL.includes(firstSegment(fromRoot) as never)) throw outside();
   return real;
 }

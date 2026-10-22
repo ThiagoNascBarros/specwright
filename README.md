@@ -2,14 +2,22 @@
 
 # Specwright
 
-**Keep your specs, decisions and project memory as the source of truth for AI coding agents.**
+**The memory and validation layer for [GitHub Spec Kit](https://github.com/github/spec-kit) projects.**
 
-An [MCP](https://modelcontextprotocol.io) server that lets an agent read only the part of a spec it needs, check its work against the acceptance criteria, record decisions, remember what earlier sessions learned, and assemble the minimal context for a task. Everything is plain Markdown in your repository.
+Specwright is an [MCP](https://modelcontextprotocol.io) server that lets a coding agent:
+- read only the Spec Kit artifact, or the section of it, that it needs;
+- check its work against the spec's requirements and acceptance scenarios;
+- mark tasks done exactly like `/speckit-implement`;
+- record decisions and remember what earlier sessions learned;
+- assemble the minimal context for a task.
+
+Everything stays plain Markdown in your repository, in Spec Kit's own layout.
 
 [![CI](https://github.com/ThiagoNascBarros/specwright/actions/workflows/ci.yml/badge.svg)](https://github.com/ThiagoNascBarros/specwright/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%E2%89%A5%2022.12-339933)
 ![MCP tools](https://img.shields.io/badge/MCP%20tools-10-7c3aed)
+![Spec Kit](https://img.shields.io/badge/Spec%20Kit-v1.2.x-2ea44f)
 
 </div>
 
@@ -17,48 +25,64 @@ An [MCP](https://modelcontextprotocol.io) server that lets an agent read only th
 
 ## Why
 
-Three problems keep coming back in agentic development:
+Spec Kit gives your agent a process: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`. Three problems remain during implementation:
 
-1. **Spec drift.** As the session goes on, the agent drifts away from what was specified, and nobody notices until code review.
-2. **Amnesia between sessions.** Decisions, conventions and pitfalls are lost when the context window ends.
-3. **Bloated context.** To be safe, the agent reads whole documents and spends tokens on noise.
+1. **Spec drift.** As the session goes on, the agent drifts from `spec.md` and nobody notices until review.
+2. **Amnesia between sessions.** Decisions and pitfalls found while implementing are lost when the context ends.
+3. **Bloated context.** To be safe, the agent rereads whole specs, plans and task lists.
 
-Specwright closes this loop:
+Specwright reads the files Spec Kit writes and gives the agent small, structured answers. It closes this loop:
 
 ```
-spec → code → validation → decision recorded → spec and memory updated
+spec.md → code → check_against_spec → set_task_status → log_decision / save_memory
 ```
+
+## How it fits Spec Kit
+
+| Spec Kit writes | Specwright |
+|---|---|
+| `specs/NNN-name/spec.md` (`/speckit-specify`, `/speckit-clarify`) | reads user stories, `FR-###`, `SC-###`, edge cases, assumptions and `[NEEDS CLARIFICATION]` markers |
+| `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`/speckit-plan`) | returns any of them, or just one section |
+| `tasks.md` (`/speckit-tasks`) | lists open `T###` tasks by story and marks them `[X]`, one character, like `/speckit-implement` |
+| `checklists/*.md` (`/speckit-checklist`) | read-only, since checklist markers belong to the reviewer |
+| `.specify/memory/constitution.md` (`/speckit-constitution`) | returns it and makes its principles searchable |
+| (nothing) | adds `.specify/memory/decisions/` and `.specify/memory/notes/` for project memory |
+
+Specwright never creates features, plans or tasks. That stays with Spec Kit's skills.
 
 ## Principles
 
-- **Specs live in the repo.** They are Markdown with frontmatter, versioned in Git, and readable by humans and agents.
-- **No LLM inside the server.** It needs no API key and makes no model calls. It returns structured data, and the agent that called it does the judging.
-- **Few, well-described tools.** There are 10 tools, and the whole `tools/list` stays under 12,000 characters.
-- **No database.** Files are re-read on every call, so nothing goes stale.
-- **Safe by default.** It has no network access and runs no commands. Nothing is read or written outside `.specwright/`, writes are atomic and byte-minimal, and nothing is ever overwritten.
+- **Your files, Spec Kit's format.** No proprietary layout. Everything is versioned in Git and readable by humans.
+- **No LLM inside the server.** It needs no API key and makes no model calls. The agent that calls it does the judging.
+- **Few, well-described tools.** There are 10, and the whole `tools/list` stays under 12,000 characters.
+- **No database, no cache.** Files are reread on every call, so nothing goes stale.
+- **Safe by default.**
+  - The server has no network access and runs no commands.
+  - It reads only `specs/` and `.specify/`.
+  - Writes are atomic and byte-minimal, and nothing is ever overwritten.
 
 ## Tools
 
 | Tool | Use it to… |
 |---|---|
-| `list_specs` | find which spec covers your task (id, title, status, criteria progress) |
-| `get_spec` | read a whole spec, or only one section such as `acceptance-criteria` |
-| `list_open_requirements` | see which acceptance criteria are still unmet, in one spec or in all of them |
-| `check_task_against_spec` | send your diff before saying "done", and get the open and met criteria, the out-of-scope items and a per-file summary |
-| `set_criterion_status` | check or uncheck one `AC-n`; only that checkbox character changes |
-| `log_decision` | record a decision linked to a spec, as `decisions/NNNN-slug.md` |
-| `list_decisions` | list decisions by spec or by date range |
+| `list_features` | find the feature your task belongs to (id, title, status, artifacts, task progress, open clarifications) |
+| `get_artifact` | read `spec`, `plan`, `tasks`, `research`, `data-model`, `quickstart`, a named `checklist` or `contract`, or the `constitution`, whole or one `##` section |
+| `list_open_tasks` | see open `T###` tasks for one feature or all, optionally for one story (`US1`) |
+| `set_task_status` | mark a task `[X]` (or reopen it); only that checkbox character changes |
+| `check_against_spec` | send your diff before saying "done"; get requirements, success criteria, scenarios, edge cases, open tasks and a per-file summary |
+| `log_decision` | record a decision (Decision / Rationale / Alternatives considered) linked to a feature |
+| `list_decisions` | list decisions by feature or date range |
 | `save_memory` | save a convention, learning or pitfall for future sessions |
-| `search_memory` | search memories and decisions by topic, ignoring case and accents |
-| `pack_context` | get the most relevant sections, memories, decisions and cited files for a task, within a token budget |
+| `search_memory` | search notes, decisions and constitution principles, ignoring case and accents |
+| `pack_context` | get the most relevant spec and plan sections, open tasks, principles, decisions and cited files for a task, within a token budget |
 
-The full input and output contracts are in [TRD §7](docs/02-trd.md#7-tool-contract).
+Full contracts: [specs/009-speckit-format/contracts/tools.md](specs/009-speckit-format/contracts/tools.md).
 
 ## Quick start
 
 ### 1. Install and connect
 
-Requires **Node.js 22.12 or later**. Open your agent in the project where you want to use Specwright and paste this prompt:
+Requires **Node.js 22.12 or later**. Open your agent in the Spec Kit project where you want to use Specwright and paste this prompt:
 
 ```text
 Install the Specwright MCP server for this project.
@@ -66,7 +90,7 @@ Install the Specwright MCP server for this project.
 1. Run `node --version`. If it is older than 22.12, stop and tell me.
 2. Clone https://github.com/ThiagoNascBarros/specwright.git into a folder outside this project. In that clone, run `npm ci` and then `npm run build`.
 3. Register the server with your MCP client, using the absolute path to `dist/index.js` in that clone. In Claude Code, run this from the root of this project: `claude mcp add specwright -- node <absolute path>/dist/index.js`. In any other client that supports stdio servers, add an entry with `command` set to `node` and that path as the only argument.
-4. Tell me if I need to restart the client, then confirm that the Specwright tools are available.
+4. Tell me if I need to restart the client, then call `list_features` and show me the result.
 ```
 
 ### 2. Configure by hand (optional)
@@ -79,103 +103,119 @@ To commit the configuration instead, add a `.mcp.json` at the project root:
     "specwright": {
       "command": "node",
       "args": ["/absolute/path/to/specwright/dist/index.js"],
-      "env": { "SPECWRIGHT_DIR": ".specwright" }
+      "env": { "SPECWRIGHT_ROOT": "." }
     }
   }
 }
 ```
 
-A relative `SPECWRIGHT_DIR` is resolved against the server's working directory, so it only works if your client starts servers from the project root. If it does not, use an absolute path, such as `/absolute/path/to/your-project/.specwright`.
+A relative `SPECWRIGHT_ROOT` is resolved against the server's working directory, so `.` only works if your client starts servers from the project root. If it does not, use an absolute path, such as `/absolute/path/to/your-project`.
 
 Any MCP client that supports stdio servers works the same way.
 
-### 3. Write your first spec
+### 3. Your first feature
 
-Describe your project in a few sentences, then paste this prompt after your description:
+Specs are written by Spec Kit's skills. Specwright reads them. In your agent:
 
 ```text
-Create the first Specwright spec for the project I just described, in `.specwright/specs/<id>.md`. The id is lowercase letters, digits and dashes, and must match the file name. Use the format of `examples/starter/.specwright/specs/auth-login.md` in the Specwright clone: frontmatter with `id`, `title` and `status: draft`, then the sections Context, Acceptance criteria and Out of scope. Write each criterion as `- [ ] AC-1: ...`, numbered in order and never renumbered. Then call `list_specs` and show me the result.
+/speckit-specify Build a photo organizer with albums grouped by date.
+/speckit-plan    Use FastAPI and SQLite.
+/speckit-tasks
 ```
 
-## Spec format
+Then paste this prompt:
 
-```markdown
----
-id: auth-login            # same as the file name; lowercase, digits and dashes
-title: Login with e-mail and password
-status: in-progress       # draft | in-progress | done | deprecated
----
-
-## Context
-Users need to authenticate to reach the logged-in area. Code lives in `src/auth/login.ts`.
-
-## Acceptance criteria
-- [x] AC-1: Valid e-mail and password return a session
-- [ ] AC-2: After 5 failed attempts the account is locked for 15 minutes
-- [ ] AC-3: Login errors never reveal whether the e-mail exists
-
-## Out of scope
-- Social login
-- Password recovery
+```text
+Use Specwright. Call `list_open_tasks` for the feature you just created, filtered to story US1, and implement those tasks test-first. Before finishing, call `check_against_spec` with your diff, report any requirement that is not met, and mark each verified task with `set_task_status`.
 ```
 
-Rules to know:
-- **Sections** are delimited by `##` headings, and their keys are normalized: `Acceptance criteria` → `acceptance-criteria`.
-- **Criteria ids** must be stable: `AC-1` and `AC-10` are different criteria, and Specwright never renumbers them.
-- **Invalid specs** are still listed, with the reasons in `issues`, and writes to them are refused.
-- **File paths** in backticks are picked up by `pack_context` as candidate files.
+To try it without Spec Kit, copy [`examples/starter/`](examples/starter/) into a project. It holds `specs/001-auth-login/` and a constitution.
 
 ## Recommended agent instructions
 
-Add something like this to your project's `CLAUDE.md` (or your agent's instructions):
+Add this to your project's `CLAUDE.md` (or your agent's instructions):
 
 ```markdown
-## Specs (Specwright MCP)
-- Start a task with `pack_context` (or `list_specs` + `get_spec` with a section). Do not read whole spec files.
-- Before saying a task is done, call `check_task_against_spec` with your diff and report any open criterion or out-of-scope change.
-- After verifying a criterion, call `set_criterion_status`. Record non-obvious choices with `log_decision`.
-- Save conventions and pitfalls you discover with `save_memory`; check `search_memory` before changing an approach.
+## Spec Kit + Specwright
+- Start a task with `pack_context` (with the feature id), or `get_artifact` for one section. Do not read whole spec files.
+- Before saying a task is done, call `check_against_spec` with your diff and report any unmet requirement or out-of-scope change.
+- After verifying a task, call `set_task_status`. Record non-obvious choices with `log_decision`.
+- Save conventions and pitfalls with `save_memory`; check `search_memory` before changing an approach.
 ```
 
 ## Configuration
 
 | Setting | Where | Default |
 |---|---|---|
-| Root folder | `SPECWRIGHT_DIR` environment variable, resolved against the server's working directory | `.specwright` |
-| Maximum response size | `.specwright/config.json` → `maxResponseChars` (integer ≥ 100) | `20000` |
+| Project root | `SPECWRIGHT_ROOT` environment variable, resolved against the server's working directory | the working directory |
+| Maximum response size | `.specify/specwright.json` → `maxResponseChars` (integer ≥ 100) | `20000` |
 
 ```
-.specwright/
-├── config.json      # optional
-├── specs/           # <spec-id>.md
-├── decisions/       # NNNN-<slug>.md, written by log_decision
-└── memory/          # <slug>.md, written by save_memory
+<project>/
+├── specs/
+│   └── 001-photo-albums/        # spec.md, plan.md, tasks.md, research.md, data-model.md,
+│                                # quickstart.md, contracts/, checklists/  (written by Spec Kit)
+└── .specify/
+    ├── specwright.json          # optional
+    └── memory/
+        ├── constitution.md      # written by /speckit-constitution
+        ├── decisions/           # NNNN-<slug>.md, written by log_decision
+        └── notes/               # <slug>.md, written by save_memory
 ```
+
+Feature folders are recognized by Spec Kit's naming: `NNN-short-name`, or `YYYYMMDD-HHMMSS-short-name`.
+
+## Migrating from v0.1.0
+
+v0.2.0 replaces the `.specwright/` format with Spec Kit's.
+
+1. Each `.specwright/specs/<id>.md` becomes `specs/NNN-<id>/spec.md`, in Spec Kit's spec template. Acceptance criteria `AC-n` become requirements `FR-00n`, and progress moves to a `tasks.md` with one `T###` per item.
+2. Move `.specwright/decisions/*` to `.specify/memory/decisions/`, and rename the `spec_id:` frontmatter key to `feature:` with the new id. Old `Context`/`Consequences` sections stay readable.
+3. Move `.specwright/memory/*` to `.specify/memory/notes/`.
+4. Replace `SPECWRIGHT_DIR` with `SPECWRIGHT_ROOT` (the project root), and `.specwright/config.json` with `.specify/specwright.json`.
+5. Rename the tools in your agent instructions:
+
+| v0.1.0 | v0.2.0 |
+|---|---|
+| `list_specs` | `list_features` |
+| `get_spec` | `get_artifact` |
+| `list_open_requirements` | `list_open_tasks` |
+| `set_criterion_status` | `set_task_status` |
+| `check_task_against_spec` | `check_against_spec` |
+
+This repository went through the same migration in [PR SW-8](specs/009-speckit-format/spec.md).
 
 ## Performance
 
-Medians measured with the test suite (laptop / GitHub Actions):
+Medians measured with the test suite on a laptop:
 
 | Scenario | Budget | Result |
 |---|---|---|
-| `list_specs`, 500 specs | < 500 ms | ~60–95 ms |
-| `get_spec` with section | < 200 ms | < 1 ms |
-| `search_memory`, 1,000 memories + 200 decisions | < 300 ms | ~140–200 ms |
-| `pack_context`, 500 specs + 1,000 memories | < 1 s | ~185–240 ms |
-| 2,000 sequential calls over stdio | p95 < 50 ms | p95 ~25–37 ms |
+| `list_features`, 500 features | < 500 ms | ~170 ms |
+| `list_open_tasks`, 500 features (2,500 open tasks) | < 500 ms | ~165 ms |
+| `get_artifact` with section | < 200 ms | < 1 ms |
+| `search_memory`, 1,000 notes + 200 decisions | < 300 ms | ~185 ms |
+| `pack_context`, 500 features + 1,000 notes | < 1 s | ~365 ms |
+| 2,000 sequential calls over stdio | p95 < 50 ms | p95 ~36 ms |
 
-Load scenarios also cover 500 concurrent calls, 200 concurrent writes, two server processes on the same root, and 2,000 specs with 5,000 memories. Details are in [docs/tdd/phase-3.md](docs/tdd/phase-3.md).
+The load scenarios also cover:
+- 500 concurrent calls and 200 concurrent writes;
+- two server processes on the same root;
+- 1,000 task updates;
+- 2,000 features with 5,000 notes.
+
+See [docs/tdd/phase-4.md](docs/tdd/phase-4.md).
 
 ## Documentation
 
 | Document | Content |
 |---|---|
-| [PRD](docs/01-prd.md) | Problem, goals, requirements (FR/NFR), success metrics |
-| [TRD](docs/02-trd.md) | Architecture, storage guarantees, formats, tool contracts, errors |
-| [Roadmap](docs/03-roadmap.md) | Phases, specs and their status |
-| [ADRs](docs/adr/) and [decisions](.specwright/decisions/) | Why things are the way they are |
-| [TDD records](docs/tdd/) | RED → GREEN evidence, AC → test map, and load results per phase |
-| [Specs](.specwright/specs/) | Specwright's own development specs (it is built with itself) |
+| [Constitution](.specify/memory/constitution.md) | The project's principles (Spec Kit) |
+| [PRD](docs/01-prd.md) / [TRD](docs/02-trd.md) | Product requirements; architecture, formats, tool contracts and errors |
+| [Roadmap](docs/03-roadmap.md) | Phases and features |
+| [Features](specs/) | Specwright's own Spec Kit features (it is built with itself) |
+| [Decisions](.specify/memory/decisions/) and [ADRs](docs/adr/) | Why things are the way they are |
+| [TDD records](docs/tdd/) | RED → GREEN evidence, requirement → test maps, and load results |
 
 ## Development
 
@@ -186,11 +226,16 @@ npm test            # unit, integration and stdio contract tests
 npm run test:load   # performance and load suites (serial)
 ```
 
-The code is organized as one module per entity: `specs/`, `decisions/`, `memory/` and `context/`. Each module has its own types, repository, pure logic, and one file per tool. All of them sit on top of `storage/`, the only layer that touches the disk. See [TRD §3](docs/02-trd.md#3-code-structure).
+One module per entity:
+- `features/`, `constitution/`, `decisions/`, `memory/` and `context/`;
+- each has its own types, repository, pure logic, and one file per tool;
+- all sit on top of `storage/`, the only layer that touches the disk.
+
+See [TRD §3](docs/02-trd.md#3-code-structure).
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: every change starts with a spec and follows test-driven development. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md): every change starts as a Spec Kit feature and is built test-first. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Security
 

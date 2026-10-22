@@ -1,18 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { readdir, readFile } from 'node:fs/promises';
+import { cp } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseSpec } from '../../src/specs/parser.js';
+import { connect, makeProject } from '../helpers.js';
 
-const dir = fileURLToPath(new URL('../../examples/starter/.specwright/specs/', import.meta.url));
+const starter = fileURLToPath(new URL('../../examples/starter/', import.meta.url));
 
 describe('shipped examples', () => {
-  it('every example spec is valid, so the README quick start works', async () => {
-    const names = (await readdir(dir)).filter((n) => n.endsWith('.md'));
-    expect(names.length).toBeGreaterThan(0);
-    for (const name of names) {
-      const spec = parseSpec(name.slice(0, -3), await readFile(dir + name, 'utf8'));
-      expect(spec, name).toMatchObject({ valid: true, issues: [] });
-      expect(spec.criteria.length, name).toBeGreaterThan(0);
-    }
+  it('the starter is a valid Spec Kit project, so the README quick start works', async () => {
+    const { root } = await makeProject();
+    await cp(join(starter, 'specs'), join(root, 'specs'), { recursive: true });
+    await cp(join(starter, '.specify'), join(root, '.specify'), { recursive: true });
+    const { call } = await connect(root);
+    const { data } = await call('list_features');
+    expect(data.features).toEqual([expect.objectContaining({ id: '001-auth-login', valid: true, tasks: { done: 0, total: 4 } })]);
+    expect(data.features[0].issues).toBeUndefined();
+    expect((await call('get_artifact', { artifact: 'constitution' })).isError).toBe(false);
   });
 });

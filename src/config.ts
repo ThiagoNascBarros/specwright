@@ -2,16 +2,17 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 export interface Config {
-  /** Absolute path of the Specwright root (SPECWRIGHT_DIR). */
+  /** Absolute path of the project root (SPECWRIGHT_ROOT); specs/ and .specify/ live below it. */
   root: string;
   maxResponseChars: number;
 }
 
 export const DEFAULT_MAX_RESPONSE_CHARS = 20000;
+export const CONFIG_FILE = '.specify/specwright.json';
 
 export function loadConfig(env: Record<string, string | undefined>, cwd: string): Config {
-  const root = resolve(cwd, env.SPECWRIGHT_DIR || '.specwright');
-  const file = join(root, 'config.json');
+  const root = resolve(cwd, env.SPECWRIGHT_ROOT || '.');
+  const file = join(root, CONFIG_FILE);
   let maxResponseChars = DEFAULT_MAX_RESPONSE_CHARS;
   if (existsSync(file)) {
     let raw: unknown;

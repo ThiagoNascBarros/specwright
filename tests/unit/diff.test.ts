@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseUnifiedDiff } from '../../src/specs/diff.js';
+import { parseUnifiedDiff } from '../../src/features/diff.js';
 
 const modified = `diff --git a/src/auth.ts b/src/auth.ts
 index 1111111..2222222 100644

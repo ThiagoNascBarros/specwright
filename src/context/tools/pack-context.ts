@@ -2,7 +2,7 @@ import * as z from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { Config } from '../../config.js';
 import { SpecwrightError, tool } from '../../errors.js';
-import { specIdSchema } from '../../specs/schemas.js';
+import { featureIdSchema } from '../../features/schemas.js';
 import { tokenize } from '../../storage/text.js';
 import { collectCandidates } from '../candidates.js';
 import { extractPaths } from '../files.js';
@@ -17,21 +17,21 @@ export function registerPackContext(server: McpServer, config: Config) {
     'pack_context',
     {
       description:
-        'Given a task description, return the most relevant spec sections, memories and decisions plus the file paths they cite, within a token budget. Call it at the start of a task instead of reading whole documents.',
+        'Given a task description, return the most relevant spec and plan sections, open tasks, constitution principles, decisions and notes, plus the file paths they cite, within a token budget. Call it at the start of a task instead of reading whole documents.',
       inputSchema: z.object({
         task: z.string().min(1).max(2000),
         budget_tokens: z.number().int().min(200).max(100_000).optional(),
-        spec_id: specIdSchema.optional(),
+        feature: featureIdSchema.optional(),
       }),
       annotations: { readOnlyHint: true },
     },
-    tool(config.maxResponseChars, async ({ task, budget_tokens = DEFAULT_BUDGET, spec_id }: { task: string; budget_tokens?: number; spec_id?: string }) => {
+    tool(config.maxResponseChars, async ({ task, budget_tokens = DEFAULT_BUDGET, feature }: { task: string; budget_tokens?: number; feature?: string }) => {
       const terms = tokenize(task);
       if (terms.length === 0) {
         throw new SpecwrightError('INVALID_INPUT', 'The task has no searchable terms.', 'Describe the task with at least one meaningful word.');
       }
       const budget = Math.max(0, Math.min(budget_tokens, Math.floor((config.maxResponseChars - ENVELOPE_CHARS) / 4)));
-      const { pinned, ranked } = await collectCandidates(config.root, terms, spec_id);
+      const { pinned, ranked } = await collectCandidates(config.root, terms, feature);
       const result = pack([...pinned, ...ranked], budget);
       const build = () => ({
         budget_tokens: budget,

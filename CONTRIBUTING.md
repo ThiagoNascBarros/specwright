@@ -4,7 +4,7 @@ Thanks for your interest! Specwright is built with its own method: a spec first,
 
 ## Before you start
 
-- **Bugs:** open an issue with the bug template, including a minimal `.specwright/` that reproduces it.
+- **Bugs:** open an issue with the bug template, including a minimal `specs/` / `.specify/` tree that reproduces it.
 - **Features:** open an issue first. Specwright keeps a hard limit of 10 tools (PRD NFR-2), so a new tool usually means replacing or merging an existing one. Discuss that before writing code.
 - **Docs and typos:** a PR is enough.
 
@@ -30,19 +30,19 @@ The repository has a `.mcp.json`, so an MCP client opened at the repo root can u
 
 ## How a change is made
 
-1. **Spec.** Add or update a spec in `.specwright/specs/<id>.md`, with numbered acceptance criteria (`AC-n`). Format: [TRD §6.1](docs/02-trd.md#61-spec-specsidmd).
-2. **Test first.** For each criterion, write a test whose name starts with its id, such as `it('AC-3: …')`, and watch it fail for the expected reason.
+1. **Spec.** Create the feature with Spec Kit (`/speckit-specify`, then `/speckit-plan` and `/speckit-tasks`), or write `specs/NNN-name/spec.md`, `plan.md` and `tasks.md` in its template shape. See `specs/009-speckit-format/` for an example.
+2. **Test first.** For each requirement or scenario, write a test whose name starts with its id, such as `it('FR-004: …')` or `it('US2-AS1: …')`, and watch it fail for the expected reason.
 3. **Implement** the minimum code that makes it pass.
 4. **Verify.** `npm run typecheck`, `npm test` and `npm run test:load` must all pass.
-5. **Close.** Check the criteria with `set_criterion_status`, record non-obvious choices with `log_decision`, and set the spec's `status: done`.
+5. **Close.** Mark the tasks with `set_task_status`, record non-obvious choices with `log_decision`, and set the spec's `**Status**:` to `Implemented`.
 
 ## Code guidelines
 
 - **One responsibility per file.**
-  - Each module (`specs/`, `decisions/`, `memory/`, `context/`) keeps its entities in `types.ts`, its disk access in `repository.ts`, its pure logic in its own files, and each tool in `tools/<tool-name>.ts`.
+  - Each module (`features/`, `constitution/`, `decisions/`, `memory/`, `context/`) keeps its entities in `types.ts`, its disk access in `repository.ts`, its pure logic in its own files, and each tool in `tools/<tool-name>.ts`.
   - `storage/` is the only layer that touches the disk, and it knows no domain.
 - **Respect the global constraints** in [TRD §2](docs/02-trd.md#2-global-constraints).
-  - The server uses no network, no `child_process` and no LLM, and writes nothing outside `SPECWRIGHT_DIR`.
+  - The server uses no network, no `child_process` and no LLM, and reads or writes nothing outside `specs/` and `.specify/`.
   - A new runtime dependency needs an ADR.
 - **Never write to stdout in the server.** It carries JSON-RPC. Use `console.error` for diagnostics.
 - **Errors** are `SpecwrightError` values with a stable `code` and a `hint`, and they never carry absolute paths.
@@ -57,8 +57,8 @@ Every piece of work has a **task code** `SW-<n>`: one code per pull request, tak
 
 | Type | Use |
 |---|---|
-| `feature/` | new behavior (`feature/SW-7-config-versioning`) |
-| `fix/` | bug fixes (`fix/SW-8-crlf-in-diff-parser`) |
+| `feature/` | new behavior (`feature/SW-12-config-versioning`) |
+| `fix/` | bug fixes (`fix/SW-13-crlf-in-diff-parser`) |
 | `docs/` | documentation only (`docs/SW-6-git-conventions`) |
 | `chore/`, `ci/`, `refactor/`, `test/` | maintenance, pipelines, internal changes, tests only |
 
@@ -73,7 +73,7 @@ Refs: SW-3
 ```
 
 - Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`.
-- Scope: the module (`specs`, `decisions`, `memory`, `context`, `storage`, `server`), or none.
+- Scope: the module (`features`, `constitution`, `decisions`, `memory`, `context`, `storage`, `server`), or none.
 - Subject: imperative, lowercase, no period, at most 72 characters.
 - Breaking changes: `feat(specs)!: …`, plus a `BREAKING CHANGE:` footer.
 - The repository owner is the only author; do not add co-author trailers.
@@ -94,6 +94,8 @@ Refs: SW-3
 | SW-5 | `docs/SW-5-open-source-docs` | Open-source documentation, v0.1.0 |
 | SW-6 | `docs/SW-6-git-conventions` | These conventions |
 | SW-7 | `chore/SW-7-dependabot-node-types` | Keep `@types/node` on the Node floor |
+| SW-8 | `feature/SW-8-speckit-format` | Spec Kit format, renamed tools, v0.2.0 |
+| SW-9 | `docs/SW-9-readme-prompt-install` | README quick start as agent prompts |
 
 ## Code of Conduct
 

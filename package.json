@@ -1,8 +1,8 @@
 {
   "name": "specwright-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "MCP server that keeps specs, decisions and project memory as the source of truth for AI coding agents, and packs the minimal context for each task.",
+  "description": "The memory and validation layer for GitHub Spec Kit projects: an MCP server that reads specs/, tracks tasks.md progress and keeps decisions in .specify/memory.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -12,7 +12,9 @@
     "claude-code",
     "acceptance-criteria",
     "adr",
-    "project-memory"
+    "project-memory",
+    "spec-kit",
+    "github-spec-kit"
   ],
   "homepage": "https://github.com/ThiagoNascBarros/specwright#readme",
   "bugs": {

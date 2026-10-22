@@ -6,7 +6,7 @@ import { makeProject } from '../helpers.js';
 
 describe('acceptance-criteria: atomic write', () => {
   it('AC-9: replaces the file and leaves no temporary file', async () => {
-    const { root } = await makeProject({ '.specwright/specs/a.md': 'old' });
+    const { root } = await makeProject({ 'specs/a.md': 'old' });
     const target = join(root, 'specs/a.md');
     await writeAtomic(target, 'new');
     expect(await fs.readFile(target, 'utf8')).toBe('new');
@@ -14,7 +14,7 @@ describe('acceptance-criteria: atomic write', () => {
   });
 
   it('AC-9: removes the temporary file when the rename fails, and keeps the original', async () => {
-    const { root } = await makeProject({ '.specwright/specs/a.md': 'old' });
+    const { root } = await makeProject({ 'specs/a.md': 'old' });
     const target = join(root, 'specs/a.md');
     // Renaming a file onto an existing directory fails on every platform.
     await fs.mkdir(join(root, 'specs/dir.md'));

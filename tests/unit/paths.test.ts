@@ -1,58 +1,48 @@
 import { describe, it, expect } from 'vitest';
-import { mkdir, symlink, writeFile } from 'node:fs/promises';
+import { symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { resolveInside, ensureRoot } from '../../src/storage/paths.js';
 import { makeProject } from '../helpers.js';
 
 async function setup() {
-  const { project, root } = await makeProject({ '.specwright/specs/a.md': 'x', 'outside.md': 'secret' });
-  return { project, root };
+  return makeProject({
+    'specs/001-a/spec.md': 'x',
+    '.specify/memory/constitution.md': 'x',
+    'src/secret.ts': 'secret',
+  });
 }
 
-describe('spec-reading: path guard', () => {
-  it('resolves a path inside the root', async () => {
+describe('FR-001: path guard', () => {
+  it('FR-001: allows paths under specs/ and .specify/', async () => {
     const { root } = await setup();
-    expect(await resolveInside(root, 'specs/a.md')).toBe(join(root, 'specs/a.md'));
+    expect(await resolveInside(root, 'specs/001-a/spec.md')).toBe(join(root, 'specs/001-a/spec.md'));
+    expect(await resolveInside(root, '.specify/memory/notes/new.md')).toBe(join(root, '.specify/memory/notes/new.md'));
   });
 
-  it('resolves a file that does not exist yet through its parent', async () => {
+  it.each(['src/secret.ts', 'README.md', '../x', 'specs/../src/secret.ts', '..\\x', 'specs\\..\\src\\secret.ts'])(
+    'FR-001: refuses "%s"',
+    async (rel) => {
+      const { root } = await setup();
+      await expect(resolveInside(root, rel)).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
+    },
+  );
+
+  it('FR-001: refuses absolute paths', async () => {
     const { root } = await setup();
-    expect(await resolveInside(root, 'specs/new.md')).toBe(join(root, 'specs/new.md'));
+    await expect(resolveInside(root, join(root, 'specs/001-a/spec.md'))).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
   });
 
-  it('AC-3: rejects ../ traversal', async () => {
+  it('FR-001: refuses a symlink inside specs/ that points elsewhere in the project', async () => {
     const { root } = await setup();
-    await expect(resolveInside(root, '../outside.md')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
+    await symlink(join(root, 'src/secret.ts'), join(root, 'specs/001-a/plan.md'));
+    await expect(resolveInside(root, 'specs/001-a/plan.md')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
   });
 
-  it('AC-3: rejects absolute paths', async () => {
-    const { project, root } = await setup();
-    await expect(resolveInside(root, join(project, 'outside.md'))).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
-  });
-
-  it('AC-3: rejects a symlink inside the root that points outside', async () => {
-    const { project, root } = await setup();
-    await symlink(join(project, 'outside.md'), join(root, 'specs/link.md'));
-    await expect(resolveInside(root, 'specs/link.md')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
-  });
-
-  it('rejects backslash traversal (Windows-style separators)', async () => {
+  it('a missing root gives NOT_INITIALIZED with a specify init hint', async () => {
     const { root } = await setup();
-    await expect(resolveInside(root, '..\\outside.md')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
-  });
-
-  it('AC-2: ensureRoot fails with NOT_INITIALIZED when the root is missing', async () => {
-    const { project } = await makeProject();
-    await expect(ensureRoot(join(project, '.specwright'))).rejects.toMatchObject({
+    await expect(ensureRoot(join(root, 'nope'))).rejects.toMatchObject({
       code: 'NOT_INITIALIZED',
-      hint: expect.stringContaining('.specwright/specs/'),
+      hint: expect.stringContaining('specify init'),
     });
-  });
-
-  it('ensureRoot fails with NOT_INITIALIZED when the root is a file', async () => {
-    const { project } = await makeProject();
-    await mkdir(join(project, 'x'));
-    await writeFile(join(project, 'x', 'f'), '');
-    await expect(ensureRoot(join(project, 'x', 'f'))).rejects.toMatchObject({ code: 'NOT_INITIALIZED' });
   });
 });

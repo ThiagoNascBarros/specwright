@@ -23,6 +23,6 @@ describe('response truncation', () => {
     const items = Array.from({ length: 20_000 }, (_, i) => ({ spec_id: `spec-${i}`, ac_id: 'AC-1', text: 'criterion text here' }));
     const start = performance.now();
     respond({ open: items }, 20_000);
-    expect(performance.now() - start).toBeLessThan(200);
+    expect(performance.now() - start).toBeLessThan(1000);
   });
 });

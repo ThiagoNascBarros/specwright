@@ -1,3 +1,5 @@
+import type { Principle } from '../constitution/types.js';
+import { CONSTITUTION_PATH } from '../constitution/repository.js';
 import type { Decision } from '../decisions/types.js';
 import { countOccurrences, snippet, tokenize } from '../storage/text.js';
 import type { Memory, SearchResult } from './types.js';
@@ -19,10 +21,17 @@ const fromMemory = (m: Memory): Searchable => ({
 });
 
 const fromDecision = (d: Decision): Searchable => ({
-  result: { kind: 'decision', id: d.id, title: d.title, type: 'decision', spec_id: d.spec_id, date: d.date, path: d.path },
+  result: { kind: 'decision', id: d.id, title: d.title, type: 'decision', feature: d.feature, date: d.date, path: d.path },
   title: d.title,
   tags: [],
   body: d.body,
+});
+
+const fromPrinciple = (p: Principle): Searchable => ({
+  result: { kind: 'constitution', id: p.key, title: p.name, type: 'constitution', path: CONSTITUTION_PATH },
+  title: p.name,
+  tags: [],
+  body: p.content.split('\n').slice(1).join('\n'),
 });
 
 export function score(terms: string[], item: Pick<Searchable, 'title' | 'tags' | 'body'>): number {
@@ -36,13 +45,13 @@ export function score(terms: string[], item: Pick<Searchable, 'title' | 'tags' |
   );
 }
 
-/** Ranks memories and decisions for `terms`: score, then newest date, then id. */
-export function rank(terms: string[], memories: Memory[], decisions: Decision[], limit: number): SearchResult[] {
+/** Ranks notes, decisions and constitution principles for `terms`: score, then newest date, then id. */
+export function rank(terms: string[], memories: Memory[], decisions: Decision[], principles: Principle[], limit: number): SearchResult[] {
   const unique = [...new Set(terms)];
-  return [...memories.map(fromMemory), ...decisions.map(fromDecision)]
+  return [...memories.map(fromMemory), ...decisions.map(fromDecision), ...principles.map(fromPrinciple)]
     .map((item) => ({ item, score: score(unique, item) }))
     .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score || b.item.result.date.localeCompare(a.item.result.date) || a.item.result.id.localeCompare(b.item.result.id))
+    .sort((a, b) => b.score - a.score || (b.item.result.date ?? '').localeCompare(a.item.result.date ?? '') || a.item.result.id.localeCompare(b.item.result.id))
     .slice(0, limit)
     .map(({ item, score }) => ({ ...item.result, score, snippet: snippet(item.body, unique) }));
 }
