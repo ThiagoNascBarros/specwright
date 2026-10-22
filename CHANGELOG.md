@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - Branch, commit and PR conventions with task codes (`SW-<n>`) documented in CONTRIBUTING.md; history renamed to follow them.
+- README quick start: install and first spec are now copy-paste agent prompts, and the absolute `SPECWRIGHT_DIR` rule sits next to the `.mcp.json` example.
 
 ## [0.1.0] — 2026-10-21
 
