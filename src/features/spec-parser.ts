@@ -26,7 +26,8 @@ export function parseSpecification(raw: string): Specification {
 
   for (const { text: line, skip } of scanLines(text)) {
     if (skip) continue;
-    for (const m of line.matchAll(CLARIFICATION)) clarifications.push(m[1]);
+    // Markers quoted in inline code (`[NEEDS CLARIFICATION: …]`) are documentation, not open questions.
+    for (const m of line.replace(/`[^`]*`/g, '').matchAll(CLARIFICATION)) clarifications.push(m[1]);
     const t = TITLE.exec(line);
     if (t && !title) title = t[1];
     const m = META.exec(line);

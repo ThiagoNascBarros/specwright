@@ -64,6 +64,11 @@ describe('FR-003: spec.md parser', () => {
     expect(s.userStories[0].scenarios).toEqual([]);
   });
 
+  it('FR-003: a marker quoted in inline code is not an open clarification', () => {
+    const s = parseSpecification('# Feature Specification: X\n\n- **FR-001**: read the `[NEEDS CLARIFICATION: …]` markers\n- **FR-002**: [NEEDS CLARIFICATION: real one]\n');
+    expect(s.clarifications).toEqual(['real one']);
+  });
+
   it('returns an empty title when the heading is missing', () => {
     expect(parseSpecification('## Requirements\n').title).toBe('');
   });

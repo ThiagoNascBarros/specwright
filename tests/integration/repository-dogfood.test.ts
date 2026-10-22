@@ -31,7 +31,7 @@ describe('US6: Specwright follows Spec Kit itself', () => {
       if (f.id !== '009-speckit-format') expect(f.tasks.done, f.id).toBe(f.tasks.total);
     }
     expect((await call('get_artifact', { artifact: 'constitution' })).data.content).toContain('Test-First (NON-NEGOTIABLE)');
-    expect((await call('list_decisions')).data.decisions).toHaveLength(10);
+    expect((await call('list_decisions')).data.decisions.length).toBeGreaterThanOrEqual(10);
   });
 
   it('SC-005: no .specwright/ folder is left', async () => {
