@@ -1,4 +1,5 @@
 import { SpecwrightError } from '../errors.js';
+import { mapLimit, READ_CONCURRENCY } from '../storage/concurrency.js';
 import { listMarkdown, readTextIfExists } from '../storage/files.js';
 import { ensureRoot, resolveInside } from '../storage/paths.js';
 import { parseSpec } from './parser.js';
@@ -30,16 +31,14 @@ export function assertValid(spec: Spec): void {
 export async function readAllSpecs(root: string): Promise<Spec[]> {
   const realRoot = await ensureRoot(root);
   const names = await listMarkdown(`${realRoot}/${SPECS_DIR}`);
-  return Promise.all(
-    names.map(async (name) => {
-      const id = name.slice(0, -3);
-      try {
-        const raw = (await readTextIfExists(await resolveInside(realRoot, `${SPECS_DIR}/${name}`))) ?? '';
-        return parseSpec(id, raw);
-      } catch (error) {
-        if (!(error instanceof SpecwrightError)) throw error;
-        return { ...parseSpec(id, ''), issues: [error.message] };
-      }
-    }),
-  );
+  return mapLimit(names, READ_CONCURRENCY, async (name) => {
+    const id = name.slice(0, -3);
+    try {
+      const raw = (await readTextIfExists(await resolveInside(realRoot, `${SPECS_DIR}/${name}`))) ?? '';
+      return parseSpec(id, raw);
+    } catch (error) {
+      if (!(error instanceof SpecwrightError)) throw error;
+      return { ...parseSpec(id, ''), issues: [error.message] };
+    }
+  });
 }

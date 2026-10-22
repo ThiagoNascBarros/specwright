@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/server';
 import type { Config } from './config.js';
+import * as context from './context/index.js';
 import * as decisions from './decisions/index.js';
 import { defaultDeps, type Deps } from './deps.js';
 import * as memory from './memory/index.js';
@@ -15,5 +16,6 @@ export function createServer(config: Config, deps: Deps = defaultDeps): McpServe
   specs.register(server, config);
   decisions.register(server, config, deps);
   memory.register(server, config, deps);
+  context.register(server, config);
   return server;
 }
