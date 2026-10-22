@@ -1,6 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { stringify } from 'yaml';
 import { SpecwrightError } from '../errors.js';
+import { mapLimit, READ_CONCURRENCY } from '../storage/concurrency.js';
 import { createExclusive, listMarkdown, readTextIfExists } from '../storage/files.js';
 import { parseDocument } from '../storage/markdown.js';
 import { ensureRoot, resolveInside } from '../storage/paths.js';
@@ -37,29 +38,27 @@ export async function createMemory(root: string, input: NewMemory, now: Date): P
 export async function readMemories(root: string): Promise<Memory[]> {
   const realRoot = await ensureRoot(root);
   const names = await listMarkdown(`${realRoot}/${MEMORY_DIR}`);
-  const memories = await Promise.all(
-    names.map(async (name): Promise<Memory | undefined> => {
-      const path = `${MEMORY_DIR}/${name}`;
-      let raw: string | undefined;
-      try {
-        raw = await readTextIfExists(await resolveInside(realRoot, path));
-      } catch (error) {
-        if (error instanceof SpecwrightError) return undefined;
-        throw error;
-      }
-      const doc = parseDocument(raw ?? '');
-      const fm = (doc.frontmatter ?? {}) as Record<string, unknown>;
-      if (!doc.frontmatter || typeof fm.title !== 'string') return undefined;
-      return {
-        id: name.slice(0, -3),
-        type: String(fm.type ?? ''),
-        title: fm.title,
-        tags: Array.isArray(fm.tags) ? fm.tags.map(String) : [],
-        date: String(fm.date ?? ''),
-        path,
-        body: doc.body.trim(),
-      };
-    }),
-  );
+  const memories = await mapLimit(names, READ_CONCURRENCY, async (name): Promise<Memory | undefined> => {
+    const path = `${MEMORY_DIR}/${name}`;
+    let raw: string | undefined;
+    try {
+      raw = await readTextIfExists(await resolveInside(realRoot, path));
+    } catch (error) {
+      if (error instanceof SpecwrightError) return undefined;
+      throw error;
+    }
+    const doc = parseDocument(raw ?? '');
+    const fm = (doc.frontmatter ?? {}) as Record<string, unknown>;
+    if (!doc.frontmatter || typeof fm.title !== 'string') return undefined;
+    return {
+      id: name.slice(0, -3),
+      type: String(fm.type ?? ''),
+      title: fm.title,
+      tags: Array.isArray(fm.tags) ? fm.tags.map(String) : [],
+      date: String(fm.date ?? ''),
+      path,
+      body: doc.body.trim(),
+    };
+  });
   return memories.filter((m): m is Memory => m !== undefined);
 }

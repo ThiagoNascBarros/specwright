@@ -9,7 +9,7 @@ const entry = fileURLToPath(new URL('../../dist/index.js', import.meta.url));
 const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
 // Every tool the finished server must expose; each spec adds its own.
-export const EXPECTED_TOOLS = ['check_task_against_spec', 'get_spec', 'list_decisions', 'list_open_requirements', 'list_specs', 'log_decision', 'save_memory', 'search_memory', 'set_criterion_status'];
+export const EXPECTED_TOOLS = ['check_task_against_spec', 'get_spec', 'list_decisions', 'list_open_requirements', 'list_specs', 'log_decision', 'pack_context', 'save_memory', 'search_memory', 'set_criterion_status'];
 
 let client: Client | undefined;
 afterEach(async () => {
@@ -31,7 +31,7 @@ describe('stdio contract', () => {
     expect(client.getServerVersion()).toMatchObject({ name: 'specwright', version: pkg.version });
   });
 
-  it('spec-reading AC-13: exposes exactly the expected tools within the NFR-3 size budget', async () => {
+  it('spec-reading AC-13 / context-pack AC-11: exposes exactly the 10 expected tools within the NFR-3 size budget', async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...EXPECTED_TOOLS].sort());
