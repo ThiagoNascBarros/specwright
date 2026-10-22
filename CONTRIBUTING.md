@@ -49,12 +49,50 @@ The repository has a `.mcp.json`, so an MCP client opened at the repo root can u
 - **Tool descriptions** are at most 2 sentences and say *when* to use the tool. The contract test enforces this and the 12,000-character `tools/list` budget.
 - **Language.** All code, comments, docs, specs, commits and PR text are in English.
 
-## Commits and pull requests
+## Branches, commits and pull requests
 
-- Use [Conventional Commits](https://www.conventionalcommits.org/): `feat(memory): …`, `fix(specs): …`, `docs: …`, `test: …`, `ci: …`.
-- One spec (or one fix) per PR. Fill in the PR template.
+Every piece of work has a **task code** `SW-<n>`: one code per pull request, taken in sequence. The code appears in the branch, the commits and the PR title.
+
+**Branches:** `<type>/SW-<n>-<short-kebab-description>`
+
+| Type | Use |
+|---|---|
+| `feature/` | new behavior (`feature/SW-7-config-versioning`) |
+| `fix/` | bug fixes (`fix/SW-8-crlf-in-diff-parser`) |
+| `docs/` | documentation only (`docs/SW-6-git-conventions`) |
+| `chore/`, `ci/`, `refactor/`, `test/` | maintenance, pipelines, internal changes, tests only |
+
+**Commits:** [Conventional Commits](https://www.conventionalcommits.org/), with the task code as a trailer:
+
+```
+feat(memory): rank title matches above tag matches
+
+Optional body explaining why, wrapped at 72 columns.
+
+Refs: SW-3
+```
+
+- Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`.
+- Scope: the module (`specs`, `decisions`, `memory`, `context`, `storage`, `server`), or none.
+- Subject: imperative, lowercase, no period, at most 72 characters.
+- Breaking changes: `feat(specs)!: …`, plus a `BREAKING CHANGE:` footer.
+- The repository owner is the only author; do not add co-author trailers.
+
+**Pull requests:**
+- The title is `[SW-<n>] <type>: <summary>`, for example `[SW-3] feat: phase 2, project memory`.
+- One task per PR. Fill in the PR template.
+- Merge with a merge commit, so the branch history stays visible.
 - CI must be green: typecheck, tests and the load suite, on Node 22 and 24.
 - Add your change to `CHANGELOG.md` under **Unreleased**.
+
+| Code | Branch | Delivered |
+|---|---|---|
+| SW-1 | `feature/SW-1-project-foundation` | Repository, build, CI, stdio server |
+| SW-2 | `feature/SW-2-spec-core` | Phase 1: specs and decisions tools |
+| SW-3 | `feature/SW-3-project-memory` | Phase 2: memory tools |
+| SW-4 | `feature/SW-4-context-packer` | Phase 3: `pack_context`, load suite |
+| SW-5 | `docs/SW-5-open-source-docs` | Open-source documentation, v0.1.0 |
+| SW-6 | `docs/SW-6-git-conventions` | These conventions |
 
 ## Code of Conduct
 

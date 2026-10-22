@@ -22,7 +22,7 @@ MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as
   - `storage/` is the only layer that touches the disk.
 - Never write to stdout in the server. stdout carries JSON-RPC; diagnostics go to stderr.
 - A spec is only ready when typecheck, `npm test` and `npm run test:load` are green, locally and in CI.
-- Commits: Conventional Commits, with the repository owner as the only author.
+- Git: branch `<type>/SW-<n>-<description>`, Conventional Commits with a `Refs: SW-<n>` trailer, PR title `[SW-<n>] <type>: <summary>` (CONTRIBUTING.md). The repository owner is the only author: no co-author trailers.
 
 ## Commands
 - `npm run typecheck`: `tsc --noEmit && tsc -p tests` (src and tests)

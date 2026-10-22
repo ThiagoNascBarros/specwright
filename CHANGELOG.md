@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- Branch, commit and PR conventions with task codes (`SW-<n>`) documented in CONTRIBUTING.md; history renamed to follow them.
+
 ## [0.1.0] — 2026-10-21
 
 First release. All three roadmap phases are complete, and the server exposes 10 tools.
