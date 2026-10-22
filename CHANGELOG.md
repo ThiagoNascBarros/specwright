@@ -4,8 +4,30 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### Changed
-- Branch, commit and PR conventions with task codes (`SW-<n>`) documented in CONTRIBUTING.md; history renamed to follow them.
+## [0.2.0] — 2026-10-21
+
+Specwright now follows the file format and vocabulary of [GitHub Spec Kit](https://github.com/github/spec-kit) v1.2.x.
+
+### Changed (breaking)
+- **Format.**
+  - Specs are read from Spec Kit features (`specs/NNN-name/` with `spec.md`, `plan.md`, `tasks.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` and `checklists/`). The `.specwright/` format is no longer read.
+  - Progress is the `T###` tasks of `tasks.md`, which `set_task_status` marks `[X]` like `/speckit-implement`. Checklists are read-only.
+- **Tools renamed.**
+  - `list_specs` → `list_features`
+  - `get_spec` → `get_artifact`
+  - `list_open_requirements` → `list_open_tasks`
+  - `set_criterion_status` → `set_task_status`
+  - `check_task_against_spec` → `check_against_spec`
+- **Memory.** Decisions and notes moved to `.specify/memory/decisions/` and `.specify/memory/notes/`. A decision links to a `feature` and uses Spec Kit's research format (Decision / Rationale / Alternatives considered).
+- **Configuration.** `SPECWRIGHT_DIR` was replaced by `SPECWRIGHT_ROOT` (the project root), and `.specwright/config.json` by `.specify/specwright.json`.
+- **Path guard.** Reads are limited to `specs/` and `.specify/`.
+- **Error codes.** `FEATURE_NOT_FOUND`, `ARTIFACT_NOT_FOUND`, `TASK_NOT_FOUND` and `INVALID_FEATURE` replace the spec and criterion codes.
+
+### Added
+- `get_artifact` returns the constitution, named checklists and contracts, or a single `##` section. Template annotations such as `*(mandatory)*` are ignored when matching section names.
+- `search_memory` and `pack_context` include the constitution principles. `pack_context` also uses `plan.md` sections and open tasks, and pins a feature's tasks first.
+- The repository itself is migrated: `specs/001`–`009` and `.specify/memory/constitution.md`.
+- A migration guide in the README.
 
 ## [0.1.0] — 2026-10-21
 
@@ -33,5 +55,6 @@ First release. All three roadmap phases are complete, and the server exposes 10 
 - Duplicate decision numbers when two server processes shared a root. A cross-process lock now guards numbering.
 - Quadratic response truncation. `list_open_requirements` over 2,000 specs went from 33 s to about 0.2 s.
 
-[Unreleased]: https://github.com/ThiagoNascBarros/specwright/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ThiagoNascBarros/specwright/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ThiagoNascBarros/specwright/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ThiagoNascBarros/specwright/releases/tag/v0.1.0

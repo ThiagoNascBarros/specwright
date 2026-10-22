@@ -9,14 +9,14 @@ MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as
 ## Documentation
 - Product (what/why): `docs/01-prd.md`. Technical (how): `docs/02-trd.md`. The global constraints in **TRD §2** apply to all code.
 - Spec order and work cycle: `docs/03-roadmap.md`. TDD records per phase: `docs/tdd/`.
-- Decisions: ADRs in `docs/adr/` (early ones) and `.specwright/decisions/` (written with `log_decision`).
-- Development specs: `.specwright/specs/`. Project memory: `.specwright/memory/`.
+- Constitution (Spec Kit): `.specify/memory/constitution.md`. Decisions: ADRs in `docs/adr/` (early ones) and `.specify/memory/decisions/` (written with `log_decision`).
+- Features (Spec Kit layout): `specs/NNN-name/` with `spec.md`, `plan.md`, `tasks.md`… Project notes: `.specify/memory/notes/`.
 
 ## How to work
 - **One spec at a time**, following the "Per-spec cycle" in the Roadmap. Specwright is built with itself, through `.mcp.json`:
-  - start with `pack_context` or `get_spec` (with a section);
-  - close with `check_task_against_spec`, `set_criterion_status` and `log_decision`.
-- **TDD is mandatory:** every `AC-n` has a test that cites the id in its name and that was seen failing before the implementation.
+  - start with `pack_context` (with the feature id) or `get_artifact` (with a section);
+  - close with `check_against_spec`, `set_task_status` and `log_decision`.
+- **TDD is mandatory:** every `FR-###` and acceptance scenario (`US<n>-AS<m>`) has a test that cites the id in its name and that was seen failing before the implementation.
 - **One responsibility per file.**
   - Each module keeps its entities in `types.ts`, its disk access in `repository.ts`, its pure logic in separate files, and each tool in `tools/<tool-name>.ts`.
   - `storage/` is the only layer that touches the disk.
@@ -33,5 +33,5 @@ MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as
 ## Structure
 - `src/index.ts`: entry point. `src/server.ts`: composition root that registers every module.
 - `src/storage/`: paths, files, lock, concurrency, markdown, slug, text.
-- `src/specs/`, `src/decisions/`, `src/memory/`, `src/context/`: domain modules (TRD §3).
+- `src/features/`, `src/constitution/`, `src/decisions/`, `src/memory/`, `src/context/`: domain modules (TRD §3).
 - `tests/unit`, `tests/integration` (in-process client), `tests/contract` (stdio), `tests/perf`, `tests/load`.

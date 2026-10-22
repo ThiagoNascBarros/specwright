@@ -2,17 +2,29 @@
 id: TRD-001
 title: Specwright — Technical Requirements Document
 status: accepted
-version: 1.0
+version: 2.0
 implements: PRD-001
 ---
 
 # TRD-001 — Specwright
 
-Explains **how** [PRD-001](01-prd.md) is built. ADRs in [`adr/`](adr/) record the decisions taken before the server could record its own. Later decisions live in [`.specwright/decisions/`](../.specwright/decisions/), written with `log_decision`. Development follows the [Roadmap](03-roadmap.md), and each phase has its test record in [`tdd/`](tdd/).
+Explains **how** [PRD-001](01-prd.md) is built. Version 2.0 adopts GitHub Spec Kit's file format. The design of that change is in the feature [`specs/009-speckit-format/`](../specs/009-speckit-format/) (spec, plan, research, data model and contracts).
+
+Decisions are recorded in two places:
+- ADRs in [`adr/`](adr/) cover the decisions taken before the server could record its own;
+- later decisions live in [`.specify/memory/decisions/`](../.specify/memory/decisions/).
+
+The project's principles are in the [constitution](../.specify/memory/constitution.md).
 
 ## 1. Technical vision
 
-Specwright is an MCP server in TypeScript with **stdio** transport, built on the official SDK v2 (`@modelcontextprotocol/server`) ([ADR-0002](adr/0002-typescript.md)). It uses no LLM ([ADR-0003](adr/0003-no-llm-in-server.md)) and no database ([ADR-0004](adr/0004-markdown-storage.md)). All state is Markdown in `.specwright/`, inside the target project's repository. That state is **re-read on every call**, so there is no index or cache that could go stale.
+Specwright is an MCP server in TypeScript with **stdio** transport, built on the official SDK v2 (`@modelcontextprotocol/server`) ([ADR-0002](adr/0002-typescript.md)). It uses no LLM ([ADR-0003](adr/0003-no-llm-in-server.md)) and no database ([ADR-0004](adr/0004-markdown-storage.md)).
+
+It reads the files that **Spec Kit** (v1.2.x) writes in the target repository:
+- `specs/NNN-name/`;
+- `.specify/memory/constitution.md`.
+
+It writes only `tasks.md` checkboxes and its own memory in `.specify/memory/`. Files are **re-read on every call**, so no state can go stale.
 
 ```
 MCP client (agent)
@@ -22,316 +34,260 @@ MCP client (agent)
         │
  src/server.ts ── composition root: registers every module's tools
         │
- ┌──────┼──────────────┬─────────────┐
- specs/ decisions/   memory/      context/        (modules)
- └──────┴──────┬───────┴─────────────┘
-               ▼
-           storage/  ── the only layer that touches the disk
-               ▼
- .specwright/{config.json, specs/, decisions/, memory/}
+ ┌──────┬──────────────┬───────────┬──────────┬──────────┐
+ features/ constitution/ decisions/  memory/   context/     (modules)
+ └──────┴───────┬──────┴───────────┴──────────┴──────────┘
+                ▼
+            storage/  ── the only layer that touches the disk
+                ▼
+ <project>/specs/NNN-name/*  and  <project>/.specify/{specwright.json, memory/}
 ```
 
 ## 2. Global constraints
 
-Every implementation plan copies this list verbatim into its *Global Constraints* section.
-
-- Node.js **≥ 22.12** (Node 20 left LTS in 2026-04; Vitest 5 needs 22.12). TypeScript in `strict` mode. ESM (`"type": "module"`).
-- Allowed runtime dependencies: `@modelcontextprotocol/server` (v2), `zod` (v4) and `yaml` (v2). Any other one requires an ADR.
-- Development dependencies: `typescript`, `vitest`, `@types/node` and `@modelcontextprotocol/client` (v2). `tsc --noEmit && tsc -p tests` is the type gate, and there is no linter.
-- Forbidden in the server: network access, `child_process`, LLM calls, and reads or writes outside `SPECWRIGHT_DIR`.
-- Tool names are `snake_case` English. Error messages are in English, with a stable `code`.
-- Every tool returns compact JSON in a single text block. Listings return an object with one array field (decision 0001).
+- Node.js **≥ 22.12**, TypeScript `strict`, ESM.
+- Runtime dependencies: `@modelcontextprotocol/server` (v2), `zod` (v4) and `yaml` (v2). Any other one requires a recorded decision.
+- Development dependencies: `typescript`, `vitest`, `@types/node` (major pinned to the Node floor) and `@modelcontextprotocol/client` (v2). `tsc --noEmit && tsc -p tests` is the type gate.
+- Forbidden in the server:
+  - network access, `child_process` and LLM calls;
+  - reads outside `specs/` and `.specify/`;
+  - writes other than `tasks.md` checkboxes and `.specify/memory/**`.
+- Tool names are `snake_case` English and follow Spec Kit's vocabulary. Errors carry a stable `code`.
+- Every tool returns compact JSON in one text block. A listing is an object with one array field (decision 0001).
 - 10 tools in total (PRD NFR-2).
 
 ## 3. Code structure
 
-Each module separates its entities, its disk access, its pure logic and its tools (one file per tool):
+Each module separates its entities, its disk access, its pure logic and its tools (one file per tool).
 
 ```
 src/
-├── index.ts              # entry point: loadConfig + stdio transport
-├── server.ts             # createServer(config, deps): registers all modules
-├── config.ts             # SPECWRIGHT_DIR + config.json
-├── deps.ts               # injectable side effects (clock)
-├── errors.ts             # SpecwrightError, codes, respond() truncation, tool() wrapper
-├── storage/              # shared infrastructure, no domain knowledge
-│   ├── paths.ts          # ensureRoot, resolveInside (path guard)
+├── index.ts  server.ts  config.ts  deps.ts  errors.ts
+├── storage/              # no domain knowledge
+│   ├── paths.ts          # ensureRoot, resolveInside (+ specs/.specify allowlist)
 │   ├── files.ts          # readTextIfExists, listMarkdown, writeAtomic, createExclusive
-│   ├── lock.ts           # withLock: cross-process lock (mkdir)
-│   ├── concurrency.ts    # mapLimit: bounded parallel reads
-│   ├── markdown.ts       # parseDocument, normalizeKey, listItems
-│   ├── slug.ts           # slugify, localDate
-│   └── text.ts           # tokenize, countOccurrences, snippet
-├── specs/
-│   ├── types.ts          # Spec, Criterion, SpecSummary, DiffSummary, FileChange
-│   ├── schemas.ts        # zod schemas for spec_id and ac_id
-│   ├── parser.ts         # parseSpec, findSection, summarize, countCriteria
-│   ├── editor.ts         # setCheckbox: one-character edit
+│   ├── lock.ts  concurrency.ts  slug.ts  text.ts
+│   └── markdown.ts       # parseDocument, stripComments, scanLines, normalizeKey, listItems
+├── features/             # Spec Kit features (replaces v0.1.0 specs/)
+│   ├── types.ts          # Feature, Specification, UserStory, Item, Task, DiffSummary
+│   ├── schemas.ts        # feature / task / story / artifact zod schemas
+│   ├── artifacts.ts      # artifact → file, existingArtifacts
+│   ├── spec-parser.ts    # parseSpecification
+│   ├── tasks-parser.ts   # parseTasks, scanTasks (shared with the editor)
+│   ├── task-editor.ts    # setTaskCheckbox
+│   ├── feature.ts        # buildFeature (validation), summarize, taskProgress
+│   ├── sections.ts       # findSection (ignores "*(mandatory)*" annotations)
 │   ├── diff.ts           # parseUnifiedDiff
-│   ├── repository.ts     # readSpec, readAllSpecs, assertValid
-│   ├── tools/            # list-specs, get-spec, list-open-requirements,
-│   │                     # set-criterion-status, check-task-against-spec
-│   └── index.ts          # register()
-├── decisions/
-│   ├── types.ts          # Decision, NewDecision
-│   ├── repository.ts     # createDecision, readDecisions, renderDecision
-│   ├── tools/            # log-decision, list-decisions
-│   └── index.ts
-├── memory/
-│   ├── types.ts          # Memory, NewMemory, SearchResult
-│   ├── repository.ts     # createMemory, readMemories
-│   ├── search.ts         # score, rank
-│   ├── tools/            # save-memory, search-memory
-│   └── index.ts
-└── context/
-    ├── types.ts          # ContextItem, PackResult
-    ├── estimate.ts       # estimateTokens
-    ├── candidates.ts     # collectCandidates
-    ├── packer.ts         # pack (greedy fill)
-    ├── files.ts          # extractPaths
-    ├── tools/            # pack-context
-    └── index.ts
+│   ├── repository.ts     # listFeatureIds, featureDir, readFeature, readAllFeatures, readArtifact, assertValid
+│   └── tools/            # list-features, get-artifact, list-open-tasks, set-task-status, check-against-spec
+├── constitution/         # read-only: types, parser, repository
+├── decisions/            # types, repository, tools/{log-decision,list-decisions}
+├── memory/               # types, repository, search, tools/{save-memory,search-memory}
+└── context/              # types, estimate, candidates, packer, files, tools/pack-context
 ```
 
-Dependency rules:
-- `storage/` knows no domain. Modules depend on `storage/`, `errors.ts` and `config.ts`.
-- A module may call another module's **public repository or pure functions**, but never its tools. Today these calls exist:
-  - `decisions` uses `specs`, to check that a spec exists;
-  - `memory` uses `decisions`, to search decisions;
-  - `context` uses `specs`, `decisions` and `memory`.
-
-  The rule was relaxed in decision 0003.
-- Only `server.ts` knows every module. Each module exports `register(server, config, deps?)`.
+**Dependency rules.**
+- `storage/` knows no domain.
+- A module may call another module's public repository or pure functions, but never its tools (decision 0003):
+  - `decisions` uses `features` to check that a feature exists;
+  - `memory` uses `decisions` and `constitution`;
+  - `context` uses all four.
+- Only `server.ts` knows every module.
 
 ## 4. Data flow
 
-**Read** (e.g., `get_spec`)
-1. The SDK validates the input against the tool's zod schema. Invalid input never reaches the tool.
-2. `tool()` wraps the call: success goes through `respond()`, and any throw becomes a structured error.
-3. The repository resolves `specs/<spec_id>.md` through `resolveInside` and reads it. Because the id is the file name, no search is needed.
-4. `parseSpec` → `findSection`. `respond()` truncates to `maxResponseChars` when needed.
+**Read** (`get_artifact`):
+1. zod validates the input.
+2. `resolveInside` checks the path against the allowlist.
+3. The file is read.
+4. HTML comments and the frontmatter are removed.
+5. `findSection` cuts the requested section.
+6. `respond()` truncates the response if it is too long.
 
-**Write** (e.g., `set_criterion_status`)
-1. Read the raw text and refuse invalid specs (`INVALID_SPEC`).
-2. `setCheckbox` changes the one checkbox character.
-3. `writeAtomic` writes a temporary file in the same folder and renames it over the target. When nothing changed, nothing is written.
-4. The new state is recomputed from the written text.
+**Write** (`set_task_status`):
+1. Read the raw `tasks.md`, and refuse an invalid feature.
+2. `setTaskCheckbox` changes one character, using the same line scanner as the parser.
+3. `writeAtomic` writes a temp file and renames it; nothing is written when nothing changed.
+4. The progress is recomputed from the written text.
 
 ## 5. Storage
 
-Root: `SPECWRIGHT_DIR`, default `.specwright`. A relative value is resolved against the server's `process.cwd()`. `config.json` is optional:
-
-```json
-{ "maxResponseChars": 20000 }
-```
-
-`maxResponseChars` must be an integer ≥ 100. Unknown fields are ignored, and an invalid file stops the server at startup with a clear message on stderr.
+The project root is `SPECWRIGHT_ROOT` (default: the server's working directory). The optional config is `.specify/specwright.json`, `{ "maxResponseChars": 20000 }` (integer ≥ 100). An invalid config stops the server at startup.
 
 ```
-.specwright/
-├── config.json
-├── specs/<spec-id>.md
-├── decisions/NNNN-<slug>.md    # created on demand by log_decision
-└── memory/<slug>.md            # created on demand by save_memory
+<project>/
+├── specs/NNN-name/{spec,plan,tasks,research,data-model,quickstart}.md, contracts/, checklists/   # Spec Kit
+└── .specify/
+    ├── specwright.json
+    └── memory/
+        ├── constitution.md             # Spec Kit (/speckit-constitution); read-only here
+        ├── decisions/NNNN-<slug>.md    # log_decision
+        └── notes/<slug>.md             # save_memory
 ```
 
 ### 5.1 Guarantees
-- **Path guard (NFR-6).**
-  - Every path goes through `resolveInside`: `realpath` is applied (to the parent for new files), and the result must stay inside the root.
-  - Absolute paths, drive letters, `..` and `..\` (backslashes are treated as separators on every platform), and symlinks that point outside the root are all rejected with `PATH_OUTSIDE_ROOT`.
-- **Atomic write (NFR-5).** The temporary file is `.<name>.<pid>.<random>.tmp`. It is removed when the write or the rename fails.
-- **Minimal edit (NFR-5).** Only the target checkbox character changes. Line endings, the BOM and every other byte stay as they were.
-- **Exclusive creation.** New decisions and memories are written with the `wx` flag and are never overwritten. A memory whose slug is taken gets `-2`, `-3`, ….
-- **Decision numbering across processes.**
-  - The next number is chosen under `decisions/.lock`, a `mkdir`-based lock shared by every server process on the machine. A lock older than 10 s is broken.
-  - Inside one process, creations also go through a promise queue.
-  - Decision 0009 records this change; it was found by the load test with two servers.
-- **Bounded reads.** Listing repositories read at most 32 files at a time, to avoid `EMFILE` on systems with a low `ulimit`.
-- **Concurrent edits to the same spec** by different processes are not locked: the last write wins, and the edit stays visible in the Git diff (PRD N5).
+- **Path guard (NFR-6, FR-001).**
+  - `resolveInside` refuses absolute paths, drive letters and backslash traversal.
+  - After `realpath` (applied to the parent for new files), the path must stay inside the root, with first segment `specs` or `.specify`.
+  - So a symlink in `specs/` that points into `src/` is refused.
+- **Atomic, byte-minimal writes (NFR-5).** Writes use a temp file and a rename. Only the checkbox character changes, and CRLF and the BOM are preserved.
+- **Exclusive creation.** Decisions and notes are written with `wx`. Notes get `-2`, `-3`… suffixes.
+- **Decision numbering across processes.** Numbering runs under a `mkdir` lock at `.specify/memory/decisions/.lock` (broken after 10 s) plus an in-process queue (decision 0009).
+- **Bounded reads.** Listings read at most 32 files at a time (decision 0010).
+- **Concurrent edits of one `tasks.md`.** These are not locked: the last write wins, and the change is visible in Git (PRD N5).
 
-## 6. Formats
+## 6. Formats (Spec Kit v1.2.x)
 
-### 6.1 Spec (`specs/<id>.md`)
+The rules come from Spec Kit's `spec-template.md`, `tasks-template.md`, `checklist-template.md` and `constitution-template.md`, and from its `create-new-feature` script ([research](../specs/009-speckit-format/research.md)).
 
-```markdown
----
-id: auth-login            # required; ^[a-z0-9][a-z0-9-]*$; same as the file name
-title: Login with e-mail  # required
-status: in-progress       # draft | in-progress | done | deprecated
----
+### 6.1 Feature
+A feature is a direct folder of `specs/` named `^(\d{3,}|\d{8}-\d{6})-[a-z0-9][a-z0-9-]*$`. The folder name is its id; any other folder is ignored.
 
-## Context
-...
-## Acceptance criteria
-- [x] AC-1: ...
-- [ ] AC-2: ...
-## Out of scope
-- ...
-```
+A feature is **invalid** when:
+- `spec.md` is missing;
+- `spec.md` has no `# Feature Specification:` heading;
+- a `T###`, `FR-###` or `SC-###` id is duplicated.
 
-Parsing rules:
-- **Frontmatter.** The `---` block at the very start, read with `yaml.parse`. A BOM and CRLF are accepted. The server **never re-serializes** an existing spec's frontmatter.
-- **Sections.**
-  - A section runs from a `##` heading to the next `##` heading. Inner `###` headings belong to it, and `##` lines inside fenced code blocks are not headings.
-  - Text before the first `##` belongs to no section.
-  - The key is the heading normalized: no accents, lowercase, non-alphanumeric runs replaced by `-`.
-- **Fixed aliases:** `criterios-de-aceite` = `acceptance-criteria`, and `fora-de-escopo` = `out-of-scope`.
-- **Criteria.**
-  - A criterion is a line of the criteria section that matches `^\s*[-*] \[( |x|X)\] (AC-\d+):\s*(.+)$`.
-  - Ids are exact (`AC-1` ≠ `AC-10`) and are never renumbered.
-  - A checkbox without an `AC-n` id is ignored and reported as an issue, without making the spec invalid.
-- **Invalid spec.** A spec is invalid when any of these holds:
-  - the frontmatter is missing or invalid;
-  - `id` or `title` is missing;
-  - the `id` differs from the file name;
-  - `status` is outside the enum;
-  - an `AC` id or a `##` heading is duplicated.
+**Warnings** (the feature stays valid):
+- a checkbox line in `tasks.md` without a `T###` id;
+- a missing `**Status**:` line.
 
-  An invalid spec is listed with `valid: false` and its issues. Writes to it are refused with `INVALID_SPEC`, and listings of open requirements and `pack_context` ignore it.
+### 6.2 `spec.md`
 
-### 6.2 Decision (`decisions/NNNN-<slug>.md`)
+HTML comments and code fences are ignored before reading. Then:
+- **Title and metadata:** the title from `# Feature Specification: <title>`, and `**Feature Branch**:`, `**Created**:`, `**Status**:` and `**Input**:`.
+- **User stories:** `### User Story N - Title (Priority: Pn)`, with the numbered `**Given** … **When** … **Then** …` scenarios below it, returned as plain text.
+- **Requirements and success criteria:** `- **FR-###**: text` and `- **SC-###**: text`.
+- **Edge Cases and Assumptions:** the list items under `### Edge Cases` and under `## Assumptions`.
+- **Clarifications:** every `[NEEDS CLARIFICATION: …]` marker.
+- **Sections:** `##` blocks. Lookup accepts the key (`requirements-mandatory`), the heading, or the heading without its `*(…)*` annotation (`Requirements`).
+
+### 6.3 `tasks.md`
+- **Task line:** `- [ ] T### [P] [USn] description`. `[P]` and `[USn]` are optional and come in this order. `[x]` and `[X]` both mean done.
+- **Phase:** the nearest `## Phase N: <name>` heading above the task.
+- **Ignored:** the leading YAML frontmatter, code fences (such as the template's "Parallel Example") and HTML comments.
+- **Writing:** `set_task_status` writes `[X]` (as `/speckit-implement` does) or a space.
+
+### 6.4 Checklists, contracts, constitution
+- **Checklists** (`checklists/<name>.md`, `CHK###` items) and **contracts** (`contracts/<file>`) are returned by name.
+  - Checklists are **never written**, because their markers belong to the reviewer.
+  - A contract name may include its extension (`.yaml`, `.json`).
+- **Constitution:** `.specify/memory/constitution.md`.
+  - The `###` principles under `## Core Principles` are indexed for search and context.
+  - The `**Version**:` value is read.
+
+### 6.5 Decision (`.specify/memory/decisions/NNNN-<slug>.md`)
 
 ```markdown
 ---
-id: "0007"                # string, so YAML does not read it as a number
-spec_id: auth-login
-title: Lock by account, not by IP
-date: 2026-10-21          # local date
-status: accepted          # accepted | superseded (superseded is edited by humans)
----
-## Context
-## Decision
-## Consequences
-```
-
-- The frontmatter is written with `yaml.stringify`. Empty optional sections are omitted.
-- The slug has no accents, uses only `[a-z0-9-]`, has at most 50 characters and is cut at a word boundary. An empty slug falls back to `decision`.
-
-### 6.3 Memory (`memory/<slug>.md`)
-
-```markdown
----
-id: one-entity-per-file
-type: convention          # convention | learning | pitfall
-title: One entity per file
-tags: [architecture]
+id: "0007"
+feature: 001-photo-albums
+title: Store metadata in SQLite
 date: 2026-10-21
+status: accepted
 ---
-Body in Markdown.
+## Decision
+## Rationale
+## Alternatives considered
 ```
+
+- These sections are Spec Kit's research format. Empty sections are omitted.
+- On read, any `##` sections are accepted, and the v0.1.0 key `spec_id` is read as `feature`.
+- The slug has no accents, uses `[a-z0-9-]`, has at most 50 characters and is cut at a word boundary.
+
+### 6.6 Note (`.specify/memory/notes/<slug>.md`)
+The frontmatter is `id`, `type` (`convention | learning | pitfall`), `title`, `tags` and `date`, followed by the body.
 
 ## 7. Tool contract
 
-Conventions:
-- Each description is at most 2 sentences and says **when** to use the tool.
-- Read-only tools carry the `readOnlyHint` annotation.
-- Errors come back as `isError: true` with `{ code, message, hint? }`.
-- Listings never include bodies, and a response over `maxResponseChars` is cut and flagged `truncated: true`. Truncation is linear: it measures the envelope once and adds items while they fit (decision 0010).
+The full contract, with inputs, outputs and errors, is in [`specs/009-speckit-format/contracts/tools.md`](../specs/009-speckit-format/contracts/tools.md).
 
-| Tool | Input | Output |
+| Tool | Input | Output (main fields) |
 |---|---|---|
-| `list_specs` | `status?` | `{ specs: [{ id, title, status, valid, issues?, criteria: {done, total} }], truncated? }` |
-| `get_spec` | `spec_id`, `section?` | `{ id, title, status, section?, content, truncated? }` |
-| `list_open_requirements` | `spec_id?` | `{ open: [{ spec_id, ac_id, text }] }` |
-| `set_criterion_status` | `spec_id`, `ac_id`, `done` | `{ spec_id, ac_id, done, changed, criteria }` |
-| `check_task_against_spec` | `spec_id`, `diff` (≤ 5,000,000 chars) | `{ spec_id, title, open_criteria, met_criteria, out_of_scope, diff_summary }` |
-| `log_decision` | `spec_id`, `title`, `decision`, `context?`, `consequences?` | `{ id, path }` |
-| `list_decisions` | `spec_id?`, `from?`, `to?` (`YYYY-MM-DD`, inclusive) | `{ decisions: [{ id, spec_id, title, date, status, path }] }` |
+| `list_features` | `status?` | `{ features: [{ id, title, status, valid, issues?, artifacts, tasks: {done,total}, open_clarifications }] }` |
+| `get_artifact` | `artifact`, `feature?`, `name?`, `section?` | `{ artifact, feature?, name?, section?, content, truncated? }` |
+| `list_open_tasks` | `feature?`, `story?` | `{ open: [{ feature, id, parallel, story?, phase, text }] }` |
+| `set_task_status` | `feature`, `task_id`, `done` | `{ feature, task_id, done, changed, tasks }` |
+| `check_against_spec` | `feature`, `diff` | `{ feature, title, status, requirements, success_criteria, user_stories, edge_cases, assumptions, open_clarifications, tasks, diff_summary }` |
+| `log_decision` | `feature`, `title`, `decision`, `rationale?`, `alternatives?` | `{ id, path }` |
+| `list_decisions` | `feature?`, `from?`, `to?` | `{ decisions: [{ id, feature, title, date, status, path }] }` |
 | `save_memory` | `type`, `title`, `body`, `tags?` | `{ id, path }` |
-| `search_memory` | `query`, `type?` (memory type or `decision`), `limit?` (1–50, default 10) | `{ results: [{ kind, id, title, type?, spec_id?, tags?, date, path, score, snippet }] }` |
-| `pack_context` | `task`, `budget_tokens?` (200–100,000, default 4,000), `spec_id?` | `{ budget_tokens, used_tokens, items: [{ kind, ref, title, score, tokens, content }], files, skipped }` |
+| `search_memory` | `query`, `type?` (note type, `decision` or `constitution`), `limit?` | `{ results: [{ kind, id, title, type?, feature?, tags?, date?, path, score, snippet }] }` |
+| `pack_context` | `task`, `budget_tokens?`, `feature?` | `{ budget_tokens, used_tokens, items: [{ kind, ref, title, score, tokens, content }], files, skipped }` |
 
-Behavior worth knowing:
-- **`get_spec`** without `section` returns the body without the frontmatter. `section` accepts the key, the original heading or an alias.
-- **`set_criterion_status`** is idempotent: `changed: false` means nothing was written.
-- **`check_task_against_spec`** judges nothing.
-  - The diff summary never includes line content, and hunk bodies are consumed by the `@@` line counts.
-  - A rename is reported only from `git` headers (decision 0006).
-  - The diff is passed as an argument, and the server never runs `git` (decision 0005, TRD Q1).
-- **`search_memory`.**
-  - Terms are lowercased, accent-free and stopword-filtered (English and Portuguese).
-  - Score = Σ occurrences × weight, with title 3, tags 2 and body 1. Ties are broken by newest date, then by id.
-  - The snippet is ≤ 200 characters.
-- **`pack_context`.**
-  - Sections score with heading 3, spec title 2 and content 1. Memories and decisions use the `search_memory` weights.
-  - Items are added greedily in score order, and an item that does not fit is skipped.
-  - With `spec_id`, that spec's acceptance criteria are pinned first.
-  - Tokens are estimated as `ceil(chars/4)` (decision 0007).
-  - The effective budget is capped at `floor((maxResponseChars − 2,000)/4)`, so the response is never truncated.
-  - `files` holds the backticked paths cited by the selected items, at most 20. Project files are never read (decision 0008).
+**Behavior.**
+- **`check_against_spec`** never judges. It never includes diff line content, and a rename is reported only from git headers (decisions 0005, 0006).
+- **`search_memory`** scores each term occurrence: title 3, tags 2, body 1. Terms are accent-free and stopword-filtered.
+- **`pack_context`** scores headings 3, titles 2 and content 1. Its candidates are:
+  - spec and plan sections, open tasks and constitution principles;
+  - decisions and notes.
+  - With `feature`, that feature's open tasks are pinned first.
+  - Tokens are estimated as `ceil(chars/4)` (decision 0007), and the budget is capped so the response is never truncated.
+  - `files` lists the paths cited in backticks or bare in task lines; files are never read (decision 0008).
 
 ## 8. Errors
 
 | Code | When |
 |---|---|
-| `NOT_INITIALIZED` | the root does not exist or is not a directory (hint: create `.specwright/specs/`) |
-| `SPEC_NOT_FOUND` | the `spec_id` does not exist |
-| `SECTION_NOT_FOUND` | the section does not exist (hint: available keys) |
-| `CRITERION_NOT_FOUND` | the `ac_id` is not in the spec's criteria section (hint: available ids) |
-| `INVALID_SPEC` | a write or validation on an invalid spec (hint: its issues) |
-| `INVALID_DIFF` | the diff is empty or has no file headers |
-| `INVALID_INPUT` | the input passes the schema but is meaningless: a stopword-only query or task, or `from` later than `to` |
-| `PATH_OUTSIDE_ROOT` | a path resolves outside the root |
-| `INTERNAL` | an unexpected failure; details go to stderr, and the message never carries paths |
-
-Input that violates a tool's zod schema is rejected by the SDK before the tool runs.
+| `NOT_INITIALIZED` | the project root does not exist (hint: `specify init` / `SPECWRIGHT_ROOT`) |
+| `FEATURE_NOT_FOUND` | no `specs/<feature>/` folder |
+| `ARTIFACT_NOT_FOUND` | missing artifact file, checklist or contract (hint: available ones) |
+| `SECTION_NOT_FOUND` | no such `##` section (hint: keys) |
+| `TASK_NOT_FOUND` | no such `T###` (hint: ids) |
+| `INVALID_FEATURE` | operation on an invalid feature (hint: issues) |
+| `INVALID_DIFF` | empty diff or no file headers |
+| `INVALID_INPUT` | semantically invalid input that passed the schema |
+| `PATH_OUTSIDE_ROOT` | the path leaves `specs/` / `.specify/` |
+| `INTERNAL` | unexpected failure; details on stderr only |
 
 ## 9. Edge cases
 
-Each spec's tests cover the cases that touch it:
-- files with CRLF or a UTF-8 BOM, empty files and frontmatter-only files;
-- headings with accents, emoji or repeated spaces, and Portuguese aliases;
-- `spec_id` values such as `../x`, `Foo`, `a/b` or `/abs`;
-- a symlink that points outside the root, and backslash traversal;
-- a spec without a criteria section, and `AC-1` next to `AC-10`;
-- `##` lines inside code fences;
-- renamed, binary, new and deleted files, multiple hunks, and content lines that start with `---`/`+++`;
-- YAML-sensitive titles, colliding slugs, and parallel writes in one process or across two.
+The covered cases are:
+- comments and fences in templates;
+- CRLF, a BOM and emoji in phase headings;
+- timestamp feature ids, and non-feature folders in `specs/`;
+- features with only a plan, and specs without a title;
+- duplicate ids, id-less checkboxes, and `T001` versus `T0010`;
+- lowercase `[x]`;
+- symlinks into the rest of the project;
+- legacy decisions;
+- every diff case of v0.1.0.
 
 ## 10. Testing strategy
 
-Development follows **TDD**:
-- each `AC-n` gets a test, named after its id, that was seen failing first;
-- the evidence per phase is in [`docs/tdd/`](tdd/).
+TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test named after it that was seen failing first. The records are in [`docs/tdd/`](tdd/), and [phase-4.md](tdd/phase-4.md) covers this version.
 
-| Suite | Command | What it covers |
+| Suite | Command | Covers |
 |---|---|---|
-| Unit | `npm test` | storage helpers, parsers, editor, diff, ranking, packer |
-| Integration | `npm test` | each tool through an in-process MCP client (`InMemoryTransport`) against a temporary project |
-| Contract | `npm test` | the built `dist/index.js` over stdio: server info, exactly 10 tools, the NFR-3 budget, and an end-to-end workflow with all 10 tools |
-| Performance | `npm run test:load` | NFR-7 budgets with 500 specs, 1,000 memories and 50,000-line diffs |
-| Load | `npm run test:load` | the real stdio process: 2,000 sequential calls, 500 concurrent reads, 200 concurrent writes, two processes on one root, checkbox churn, 2,000 specs + 5,000 memories |
-
-- Timing suites run serially and apart from the default suite, with a 2× margin when `CI` is set.
-- The CI runs typecheck, `npm test` and `npm run test:load` on Node 22 and 24.
-- The integration tests build their fixtures inline in temporary directories and never read the repository's own `.specwright/`. Dogfooding against the repository is a manual smoke test.
+| Unit | `npm test` | parsers, editor, path guard, storage helpers, ranking, packer |
+| Integration | `npm test` | every tool through an in-process client, on a copy of `tests/fixtures/speckit/` (built in Spec Kit's template shape) or on inline projects |
+| Contract | `npm test` | the built `dist/index.js` over stdio: exactly 10 tools, the size budget, and a full agent session using all 10 tools |
+| Dogfood | `npm test` | this repository's own `specs/` and `.specify/` (a snapshot copy): 9 valid features |
+| Performance and load | `npm run test:load` | 500 / 2,000 features, 5,000 notes, concurrent and cross-process writes |
 
 ## 11. Build and distribution
 
-- `tsc` generates `dist/`. The entry point is `dist/index.js`, which has a shebang and a `bin` field.
-- Install from source today (see the README). The npm name `specwright-mcp` is reserved by intent only. `package.json` keeps `private: true` until a publication decision is made.
+`tsc` compiles to `dist/`, whose `index.js` has a shebang and is the `bin`. Install from source. The package keeps `private: true` until a publishing decision is made.
 
 ## 12. Security
 
-- No network access, no command execution, and no file access outside the root (§2, §5.1).
-- Spec, memory and decision contents are data. The server never interprets them as instructions.
-- `spec_id` and `ac_id` are validated by regex before any disk access. Paths returned to clients are relative.
-- See [SECURITY.md](../SECURITY.md) for reporting.
+- No network access, no command execution, and no file access outside `specs/` and `.specify/`.
+- Content is data and is never interpreted as instructions.
+- Identifiers are validated by regex before any disk access, and returned paths are relative.
+- See [SECURITY.md](../SECURITY.md).
 
 ## 13. Traceability
 
-| Requirement | Component | Spec |
+| PRD requirement | Tool | Feature |
 |---|---|---|
-| NFR-9, NFR-10 | `package.json`, `src/index.ts`, CI | `project-foundation` |
-| FR-1, FR-2, FR-3, NFR-3, NFR-4, NFR-6, NFR-7, NFR-8 | `storage/*`, `specs/parser`, `specs/repository`, `list_specs`, `get_spec` | `spec-reading` |
-| FR-4, FR-6, NFR-5 | `storage/files`, `specs/editor`, `list_open_requirements`, `set_criterion_status` | `acceptance-criteria` |
-| FR-7 | `decisions/*`, `storage/lock` | `decision-log` |
-| FR-5 | `specs/diff`, `check_task_against_spec` | `check-task` |
-| FR-8, FR-9 | `memory/*`, `storage/text` | `memory` |
-| FR-10 | `decisions/tools/list-decisions` | `decision-list` |
-| FR-11, NFR-2 | `context/*` | `context-pack` |
+| FR-1, FR-2, FR-3 | `list_features`, `get_artifact` | `002-spec-reading` → `009-speckit-format` (US1) |
+| FR-4, FR-6 | `list_open_tasks`, `set_task_status` | `003-acceptance-criteria` → `009` (US2) |
+| FR-5 | `check_against_spec` | `005-check-task` → `009` (US3) |
+| FR-7, FR-10 | `log_decision`, `list_decisions` | `004`, `007` → `009` (US4) |
+| FR-8, FR-9 | `save_memory`, `search_memory` | `006` → `009` (US4) |
+| FR-11 | `pack_context` | `008` → `009` (US5) |
 
 ## 14. Open questions
 
-- Q3 (from the PRD): versioning of `config.json` and of the spec format. It is still deferred: a file without a version is v1.
-- Whether to keep a cache for very large projects. Today no budget fails: 2,000 specs list in about 300 ms on CI. Revisit only if NFR-7 fails in real use (ADR-0004).
+- Reading `.specify/feature.json` to default the feature in `list_open_tasks` and `pack_context`. Spec 009 keeps it out of scope.
+- Versioning of `.specify/specwright.json` (PRD Q3).
