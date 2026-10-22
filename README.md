@@ -56,26 +56,22 @@ The full input and output contracts are in [TRD §7](docs/02-trd.md#7-tool-contr
 
 ## Quick start
 
-### 1. Install
+### 1. Install and connect
 
-Requires **Node.js 22.12 or later**.
+Requires **Node.js 22.12 or later**. Open your agent in the project where you want to use Specwright and paste this prompt:
 
-```bash
-git clone https://github.com/ThiagoNascBarros/specwright.git
-cd specwright
-npm ci
-npm run build
+```text
+Install the Specwright MCP server for this project.
+
+1. Run `node --version`. If it is older than 22.12, stop and tell me.
+2. Clone https://github.com/ThiagoNascBarros/specwright.git into a folder outside this project. In that clone, run `npm ci` and then `npm run build`.
+3. Register the server with your MCP client, using the absolute path to `dist/index.js` in that clone. In Claude Code, run this from the root of this project: `claude mcp add specwright -- node <absolute path>/dist/index.js`. In any other client that supports stdio servers, add an entry with `command` set to `node` and that path as the only argument.
+4. Tell me if I need to restart the client, then confirm that the Specwright tools are available.
 ```
 
-### 2. Add it to your MCP client
+### 2. Configure by hand (optional)
 
-**Claude Code**, from the root of the project you want to use it in:
-
-```bash
-claude mcp add specwright -- node /absolute/path/to/specwright/dist/index.js
-```
-
-Or commit a `.mcp.json` at the project root:
+To commit the configuration instead, add a `.mcp.json` at the project root:
 
 ```json
 {
@@ -89,16 +85,17 @@ Or commit a `.mcp.json` at the project root:
 }
 ```
 
+A relative `SPECWRIGHT_DIR` is resolved against the server's working directory, so it only works if your client starts servers from the project root. If it does not, use an absolute path, such as `/absolute/path/to/your-project/.specwright`.
+
 Any MCP client that supports stdio servers works the same way.
 
 ### 3. Write your first spec
 
-```bash
-mkdir -p .specwright/specs
-cp /absolute/path/to/specwright/examples/starter/.specwright/specs/auth-login.md .specwright/specs/
-```
+Describe your project in a few sentences, then paste this prompt after your description:
 
-Then ask your agent: *"Use `list_specs`, then implement the open criteria of `auth-login`."*
+```text
+Create the first Specwright spec for the project I just described, in `.specwright/specs/<id>.md`. The id is lowercase letters, digits and dashes, and must match the file name. Use the format of `examples/starter/.specwright/specs/auth-login.md` in the Specwright clone: frontmatter with `id`, `title` and `status: draft`, then the sections Context, Acceptance criteria and Out of scope. Write each criterion as `- [ ] AC-1: ...`, numbered in order and never renumbered. Then call `list_specs` and show me the result.
+```
 
 ## Spec format
 
@@ -146,8 +143,6 @@ Add something like this to your project's `CLAUDE.md` (or your agent's instructi
 |---|---|---|
 | Root folder | `SPECWRIGHT_DIR` environment variable, resolved against the server's working directory | `.specwright` |
 | Maximum response size | `.specwright/config.json` → `maxResponseChars` (integer ≥ 100) | `20000` |
-
-Use an absolute `SPECWRIGHT_DIR` if your client does not start servers from the project root.
 
 ```
 .specwright/
