@@ -16,20 +16,20 @@ export interface Memory {
   tags: string[];
   /** Local creation date, YYYY-MM-DD. */
   date: string;
-  /** Path relative to the root, e.g. "memory/use-kebab-case-ids.md". */
+  /** Path relative to the root, e.g. ".specify/memory/notes/use-kebab-case-ids.md". */
   path: string;
   body: string;
 }
 
-/** One ranked hit of `search_memory`: a memory or a decision. */
+/** One ranked hit of `search_memory`: a note, a decision or a constitution principle. */
 export interface SearchResult {
-  kind: 'memory' | 'decision';
+  kind: 'memory' | 'decision' | 'constitution';
   id: string;
   title: string;
   type?: string;
-  spec_id?: string;
+  feature?: string;
   tags?: string[];
-  date: string;
+  date?: string;
   path: string;
   score: number;
   snippet: string;

@@ -2,20 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseDocument } from '../../src/storage/markdown.js';
-import { makeProject, connect, spec } from '../helpers.js';
+import { copyFixture, makeProject, connect, specMd } from '../helpers.js';
 
 const now = () => new Date(2026, 9, 21, 12, 0);
 
 async function project() {
-  return makeProject({ '.specwright/specs/auth.md': spec('auth', '## Context\nx\n') });
+  return makeProject({ 'specs/001-auth/spec.md': specMd('Auth') });
 }
 
 describe('memory: save_memory', () => {
-  it('AC-1: writes memory/<slug>.md with frontmatter and body', async () => {
+  it('FR-011: writes .specify/memory/notes/<slug>.md with frontmatter and body', async () => {
     const { root } = await project();
     const { call } = await connect(root, {}, now);
     const r = await call('save_memory', { type: 'convention', title: 'Use kebab-case ids', body: 'Spec ids are kebab-case.', tags: ['naming', 'naming', 'ids'] });
-    expect(r.data).toEqual({ id: 'use-kebab-case-ids', path: 'memory/use-kebab-case-ids.md' });
+    expect(r.data).toEqual({ id: 'use-kebab-case-ids', path: '.specify/memory/notes/use-kebab-case-ids.md' });
     const doc = parseDocument(await readFile(join(root, r.data.path), 'utf8'));
     expect(doc.frontmatter).toEqual({ id: 'use-kebab-case-ids', type: 'convention', title: 'Use kebab-case ids', tags: ['naming', 'ids'], date: '2026-10-21' });
     expect(doc.body.trim()).toBe('Spec ids are kebab-case.');
@@ -27,7 +27,7 @@ describe('memory: save_memory', () => {
     await call('save_memory', { type: 'learning', title: 'Same', body: 'first' });
     const second = await call('save_memory', { type: 'learning', title: 'Same', body: 'second' });
     expect(second.data.id).toBe('same-2');
-    expect(await readFile(join(root, 'memory/same.md'), 'utf8')).toContain('first');
+    expect(await readFile(join(root, '.specify/memory/notes/same.md'), 'utf8')).toContain('first');
   });
 
   it.each([
@@ -38,12 +38,12 @@ describe('memory: save_memory', () => {
     const { root } = await project();
     const { call } = await connect(root);
     expect((await call('save_memory', args)).isError).toBe(true);
-    await expect(readdir(join(root, 'memory'))).rejects.toThrow();
+    await expect(readdir(join(root, '.specify/memory/notes'))).rejects.toThrow();
   });
 
   it('AC-4: a missing root gives NOT_INITIALIZED', async () => {
     const { root } = await makeProject();
-    const { call } = await connect(root);
+    const { call } = await connect(root + '/nope');
     expect((await call('save_memory', { type: 'pitfall', title: 't', body: 'b' })).data).toMatchObject({ code: 'NOT_INITIALIZED' });
   });
 });
@@ -56,7 +56,7 @@ describe('memory: search_memory', () => {
     await call('save_memory', { type: 'learning', title: 'Tagged', body: 'unrelated', tags: ['retry'] });
     await call('save_memory', { type: 'pitfall', title: 'Body only', body: 'Network calls need a retry with backoff.' });
     await call('save_memory', { type: 'convention', title: 'Convenção de logs', body: 'Logs em JSON.' });
-    await call('log_decision', { spec_id: 'auth', title: 'Retry login once', decision: 'One retry on timeout.' });
+    await call('log_decision', { feature: '001-auth', title: 'Retry login once', decision: 'One retry on timeout.' });
     return { ...p, call };
   }
 
@@ -73,7 +73,7 @@ describe('memory: search_memory', () => {
     const { call } = await seeded();
     const { data } = await call('search_memory', { query: 'retry', type: 'decision' });
     expect(data.results).toEqual([
-      expect.objectContaining({ kind: 'decision', id: '0001', title: 'Retry login once', spec_id: 'auth', path: 'decisions/0001-retry-login-once.md' }),
+      expect.objectContaining({ kind: 'decision', id: '0001', title: 'Retry login once', feature: '001-auth', path: '.specify/memory/decisions/0001-retry-login-once.md' }),
     ]);
   });
 
@@ -109,5 +109,28 @@ describe('memory: search_memory', () => {
     await (await connect(root)).call('save_memory', { type: 'pitfall', title: 'Windows paths', body: 'Use path.join.' });
     const fresh = await connect(root);
     expect((await fresh.call('search_memory', { query: 'windows' })).data.results[0].title).toBe('Windows paths');
+  });
+});
+
+describe('US4: constitution in search_memory', () => {
+  it('US4-AS2 / FR-011: finds a constitution principle', async () => {
+    const { root } = await copyFixture('speckit');
+    const { call } = await connect(root);
+    const { data } = await call('search_memory', { query: 'test first' });
+    expect(data.results[0]).toMatchObject({
+      kind: 'constitution',
+      id: 'ii-test-first-non-negotiable',
+      title: 'II. Test-First (NON-NEGOTIABLE)',
+      type: 'constitution',
+      path: '.specify/memory/constitution.md',
+    });
+  });
+
+  it('FR-011: type "constitution" keeps only principles', async () => {
+    const { root } = await copyFixture('speckit');
+    const { call } = await connect(root);
+    await call('save_memory', { type: 'learning', title: 'Simplicity wins', body: 'Keep it simple.' });
+    const { data } = await call('search_memory', { query: 'simplicity', type: 'constitution' });
+    expect(data.results.map((r: { kind: string }) => r.kind)).toEqual(['constitution']);
   });
 });

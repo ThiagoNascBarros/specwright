@@ -8,7 +8,8 @@ import { ensureRoot, resolveInside } from '../storage/paths.js';
 import { localDate, slugify } from '../storage/slug.js';
 import type { Memory, NewMemory } from './types.js';
 
-export const MEMORY_DIR = 'memory';
+/** Notes live next to Spec Kit's constitution, in the project memory folder. */
+export const MEMORY_DIR = '.specify/memory/notes';
 const MAX_SUFFIX = 1000;
 
 export function renderMemory(id: string, input: NewMemory, date: string): string {

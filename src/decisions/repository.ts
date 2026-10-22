@@ -9,7 +9,8 @@ import { ensureRoot, resolveInside } from '../storage/paths.js';
 import { localDate, slugify } from '../storage/slug.js';
 import type { Decision, NewDecision } from './types.js';
 
-export const DECISIONS_DIR = 'decisions';
+/** Next to Spec Kit's constitution, in the project memory folder. */
+export const DECISIONS_DIR = '.specify/memory/decisions';
 const FILE = /^(\d{4})-.+\.md$/;
 const MAX_ATTEMPTS = 5;
 /** Lock directory shared by every server process writing to the same root. */
@@ -18,12 +19,13 @@ const LOCK = '.lock';
 // Serializes creations in this process; the directory lock serializes other processes (TRD §5.1).
 let queue: Promise<unknown> = Promise.resolve();
 
+/** Spec Kit's research format: Decision / Rationale / Alternatives considered; empty sections are omitted. */
 export function renderDecision(id: string, input: NewDecision, date: string): string {
-  const frontmatter = stringify({ id, spec_id: input.spec_id, title: input.title, date, status: 'accepted' });
+  const frontmatter = stringify({ id, feature: input.feature, title: input.title, date, status: 'accepted' });
   const sections = [
-    ['Context', input.context],
     ['Decision', input.decision],
-    ['Consequences', input.consequences],
+    ['Rationale', input.rationale],
+    ['Alternatives considered', input.alternatives],
   ]
     .filter(([, text]) => text?.trim())
     .map(([heading, text]) => `## ${heading}\n${text!.trim()}\n`);
@@ -35,7 +37,7 @@ async function nextNumber(dir: string): Promise<number> {
   return numbers.length ? Math.max(...numbers) + 1 : 1;
 }
 
-/** Creates the next decision file. The caller must have checked that the spec exists. */
+/** Creates the next decision file. The caller must have checked that the feature exists. */
 export function createDecision(root: string, input: NewDecision, now: Date): Promise<{ id: string; path: string }> {
   const run = queue.then(async () => {
     const dir = await resolveInside(root, DECISIONS_DIR);
@@ -79,7 +81,8 @@ export async function readDecisions(root: string): Promise<Decision[]> {
     if (!doc.frontmatter || typeof fm.title !== 'string') return undefined;
     return {
       id: FILE.exec(name)![1],
-      spec_id: String(fm.spec_id ?? ''),
+      // v0.1.0 decisions used spec_id; migrated files may still carry it.
+    feature: String(fm.feature ?? fm.spec_id ?? ''),
       title: fm.title,
       date: String(fm.date ?? ''),
       status: String(fm.status ?? ''),
