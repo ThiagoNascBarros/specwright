@@ -7,6 +7,10 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Types must match the Node floor (>= 22.12), not the newest Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
