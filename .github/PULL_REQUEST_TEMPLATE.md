@@ -1,6 +1,6 @@
 ## Spec
 
-<!-- Link the spec this PR implements, e.g. `.specwright/specs/<id>.md`, or the issue it fixes. -->
+<!-- Title: [SW-<n>] <type>: <summary>. Link the spec this PR implements (`.specwright/specs/<id>.md`) or the issue it fixes. -->
 
 ## What changed
 
