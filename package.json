@@ -17,7 +17,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit && tsc -p tests",
     "pretest": "npm run build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:load": "npm run build && vitest run --config vitest.load.config.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",
