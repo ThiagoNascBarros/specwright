@@ -65,3 +65,16 @@ describe('spec-reading: markdown', () => {
     expect(listItems('## Out of scope\n- one\n* two\n  - nested\ntext\n')).toEqual(['one', 'two', 'nested']);
   });
 });
+
+describe('R4: comments and fences', () => {
+  it('stripComments removes single- and multi-line HTML comments', async () => {
+    const { stripComments } = await import('../../src/storage/markdown.js');
+    expect(stripComments('a <!-- x --> b\n<!--\n- **FR-099**: no\n-->\nc')).toBe('a  b\n\nc');
+  });
+
+  it('scanLines marks fenced and commented lines as skipped and keeps CRLF out of the text', async () => {
+    const { scanLines } = await import('../../src/storage/markdown.js');
+    const lines = scanLines('a\r\n```\nb\n```\n<!--\nc\n-->\nd');
+    expect(lines.filter((l) => !l.skip).map((l) => l.text)).toEqual(['a', 'd']);
+  });
+});

@@ -11,11 +11,11 @@ export const specPath = (id: string) => `${SPECS_DIR}/${id}.md`;
 
 /** Reads one spec by id; throws SPEC_NOT_FOUND when the file does not exist. */
 export async function readSpec(root: string, id: string): Promise<{ spec: Spec; path: string; raw: string }> {
-  if (!SPEC_ID_PATTERN.test(id)) throw new SpecwrightError('SPEC_NOT_FOUND', `Invalid spec id "${id}".`);
+  if (!SPEC_ID_PATTERN.test(id)) throw new SpecwrightError('FEATURE_NOT_FOUND', `Invalid spec id "${id}".`);
   const path = await resolveInside(root, specPath(id));
   const raw = await readTextIfExists(path);
   if (raw === undefined) {
-    throw new SpecwrightError('SPEC_NOT_FOUND', `Spec "${id}" not found.`, 'Call list_specs to see the available ids.');
+    throw new SpecwrightError('FEATURE_NOT_FOUND', `Spec "${id}" not found.`, 'Call list_specs to see the available ids.');
   }
   return { spec: parseSpec(id, raw), path, raw };
 }
@@ -23,7 +23,7 @@ export async function readSpec(root: string, id: string): Promise<{ spec: Spec; 
 /** Throws INVALID_SPEC (with the issues as hint) unless the spec is valid. */
 export function assertValid(spec: Spec): void {
   if (!spec.valid) {
-    throw new SpecwrightError('INVALID_SPEC', `Spec "${spec.id}" is invalid.`, `Fix: ${spec.issues.join('; ')}.`);
+    throw new SpecwrightError('INVALID_FEATURE', `Spec "${spec.id}" is invalid.`, `Fix: ${spec.issues.join('; ')}.`);
   }
 }
 

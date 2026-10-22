@@ -1,76 +1,70 @@
 import { describe, it, expect } from 'vitest';
-import { parseSpec, findSection } from '../../src/specs/parser.js';
+import { readFileSync } from 'node:fs';
+import { parseSpecification } from '../../src/features/spec-parser.js';
 
-const valid = `---
-id: auth
-title: Auth
-status: in-progress
----
-## Context
-c
-## Acceptance criteria
-- [x] AC-1: one
-- [ ] AC-10: ten
-* [X] AC-2: two
-- [ ] no id here
-## Out of scope
-- social login
-`;
+const raw = readFileSync(new URL('../fixtures/speckit/specs/001-photo-albums/spec.md', import.meta.url), 'utf8');
 
-describe('spec-reading: spec parser', () => {
-  it('extracts criteria with exact ids (AC-1 and AC-10 are distinct)', () => {
-    const s = parseSpec('auth', valid);
-    expect(s.criteria.map((c) => [c.id, c.done])).toEqual([
-      ['AC-1', true],
-      ['AC-10', false],
-      ['AC-2', true],
+describe('FR-003: spec.md parser', () => {
+  const spec = parseSpecification(raw);
+
+  it('FR-003: reads the title and the metadata lines', () => {
+    expect(spec).toMatchObject({
+      title: 'Photo albums',
+      branch: '001-photo-albums',
+      created: '2026-10-01',
+      status: 'Draft',
+      input: 'User description: "Build a photo organizer with albums grouped by date."',
+    });
+  });
+
+  it('FR-003: reads user stories with number, title, priority and scenarios', () => {
+    expect(spec.userStories).toEqual([
+      {
+        number: 1,
+        title: 'Upload photos',
+        priority: 'P1',
+        scenarios: [
+          'Given an empty library, When the user uploads a photo, Then it appears in the "Unsorted" album',
+          'Given a photo larger than the limit, When the user uploads it, Then an error explains the limit',
+        ],
+      },
+      {
+        number: 2,
+        title: 'Organize albums by date',
+        priority: 'P2',
+        scenarios: ['Given photos from March and April, When the library is opened, Then two albums are shown, newest first'],
+      },
     ]);
-    expect(s.valid).toBe(true);
   });
 
-  it('a checkbox without AC id is an issue but keeps the spec valid', () => {
-    const s = parseSpec('auth', valid);
-    expect(s.issues.some((i) => i.includes('no id here'))).toBe(true);
-    expect(s.valid).toBe(true);
+  it('FR-003: reads FR and SC items, ignoring those inside comments', () => {
+    expect(spec.requirements.map((r) => r.id)).toEqual(['FR-001', 'FR-002', 'FR-003', 'FR-004', 'FR-005']);
+    expect(spec.requirements[0]).toEqual({ id: 'FR-001', text: 'System MUST accept JPEG and PNG uploads' });
+    expect(spec.successCriteria.map((r) => r.id)).toEqual(['SC-001', 'SC-002']);
   });
 
-  it('reads out-of-scope items', () => {
-    expect(parseSpec('auth', valid).outOfScope).toEqual(['social login']);
+  it('FR-003: reads edge cases, assumptions and open clarifications (not the commented one)', () => {
+    expect(spec.edgeCases).toEqual(['What happens when a photo has no date metadata?', 'How does the system handle duplicate uploads?']);
+    expect(spec.assumptions).toHaveLength(2);
+    expect(spec.clarifications).toEqual(['size limit not specified']);
   });
 
-  it('a spec without criteria section has zero criteria', () => {
-    expect(parseSpec('a', '---\nid: a\ntitle: A\nstatus: draft\n---\n## Context\n').criteria).toEqual([]);
+  it('FR-003: exposes ## sections without the template comments', () => {
+    const keys = spec.sections.map((s) => s.key);
+    expect(keys).toContain('requirements-mandatory');
+    expect(spec.sections.find((s) => s.key.startsWith('user-scenarios'))!.content).not.toContain('IMPORTANT');
   });
 
-  it('accepts the Portuguese alias for the criteria section', () => {
-    const s = parseSpec('a', '---\nid: a\ntitle: A\nstatus: draft\n---\n## Critérios de aceite\n- [ ] AC-1: x\n');
-    expect(s.criteria).toHaveLength(1);
+  it('FR-003: LF, CRLF and a BOM give the same result', () => {
+    expect(parseSpecification('﻿' + raw.replace(/\n/g, '\r\n'))).toEqual(spec);
   });
 
-  it.each([
-    ['missing frontmatter', '## Context\n', /frontmatter/],
-    ['missing title', '---\nid: a\nstatus: draft\n---\n', /title/],
-    ['id mismatch', '---\nid: b\ntitle: A\nstatus: draft\n---\n', /id/],
-    ['bad status', '---\nid: a\ntitle: A\nstatus: wip\n---\n', /status/],
-    ['duplicate AC', '---\nid: a\ntitle: A\nstatus: draft\n---\n## Acceptance criteria\n- [ ] AC-1: x\n- [ ] AC-1: y\n', /AC-1/],
-    ['duplicate heading', '---\nid: a\ntitle: A\nstatus: draft\n---\n## Context\n## Context\n', /heading/],
-    ['invalid yaml', '---\nid: [x\n---\n', /frontmatter/],
-  ])('AC-5: %s makes the spec invalid', (_name, text, issue) => {
-    const s = parseSpec('a', text);
-    expect(s.valid).toBe(false);
-    expect(s.issues.some((i) => issue.test(i))).toBe(true);
+  it('FR-003: a scenario inside a code fence is not read', () => {
+    const s = parseSpecification('# Feature Specification: X\n\n### User Story 1 - A (Priority: P1)\n\n```\n1. **Given** a, **When** b, **Then** c\n```\n');
+    expect(s.userStories[0].scenarios).toEqual([]);
   });
 
-  it('AC-5: reports one issue per problem', () => {
-    const s = parseSpec('a', '---\nid: b\nstatus: wip\n---\n');
-    expect(s.issues).toHaveLength(3);
-  });
-
-  it('AC-9: finds a section by key, original heading or alias', () => {
-    const s = parseSpec('auth', valid);
-    expect(findSection(s, 'acceptance-criteria')?.key).toBe('acceptance-criteria');
-    expect(findSection(s, 'Acceptance criteria')?.key).toBe('acceptance-criteria');
-    expect(findSection(s, 'critérios de aceite')?.key).toBe('acceptance-criteria');
-    expect(findSection(s, 'missing')).toBeUndefined();
+  it('returns an empty title when the heading is missing', () => {
+    expect(parseSpecification('## Requirements\n').title).toBe('');
   });
 });

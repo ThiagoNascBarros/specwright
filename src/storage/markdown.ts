@@ -30,6 +30,41 @@ export function normalizeKey(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/** Removes HTML comments (Spec Kit templates are full of `<!-- ACTION REQUIRED -->` blocks). */
+export function stripComments(text: string): string {
+  return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+
+export interface ScannedLine {
+  /** Line text without its line terminator. */
+  text: string;
+  /** True for fence markers, lines inside a code fence and lines inside an HTML comment. */
+  skip: boolean;
+}
+
+/** Splits raw text into lines and marks the ones that are code or comments, never content. */
+export function scanLines(raw: string): ScannedLine[] {
+  let inFence = false;
+  let inComment = false;
+  return raw.split('\n').map((rawLine) => {
+    const text = rawLine.replace(/\r$/, '');
+    if (inComment) {
+      if (text.includes('-->')) inComment = false;
+      return { text, skip: true };
+    }
+    if (FENCE.test(text)) {
+      inFence = !inFence;
+      return { text, skip: true };
+    }
+    if (inFence) return { text, skip: true };
+    if (text.trimStart().startsWith('<!--')) {
+      if (!text.includes('-->')) inComment = true;
+      return { text, skip: true };
+    }
+    return { text, skip: false };
+  });
+}
+
 export function parseDocument(raw: string): ParsedDocument {
   const text = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
   let frontmatter: unknown;
