@@ -20,3 +20,5 @@ All state is **Markdown with YAML frontmatter** in `.specwright/` inside the rep
 Writes must be minimal and atomic (TRD §5.1). No lock between processes: one server per project. Listings read all frontmatters on every call (NFR-7 target); a cache or index is only introduced if that target fails in practice.
 
 **Revision 2026-10-21:** the previous version planned an in-memory index rebuilt at startup. It was removed because it would become stale as soon as a file changed during the session.
+
+**Revision 2026-10-21 (decision 0009):** the "one server per project" premise no longer holds for decision numbering. Two agent sessions can run two server processes on the same root, so decision numbers are now allocated under a `mkdir`-based cross-process lock (`decisions/.lock`).

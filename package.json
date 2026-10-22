@@ -1,8 +1,29 @@
 {
   "name": "specwright-mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "MCP server that keeps specs, decisions and project memory as the source of truth for AI agents.",
+  "description": "MCP server that keeps specs, decisions and project memory as the source of truth for AI coding agents, and packs the minimal context for each task.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "ai-agents",
+    "spec-driven-development",
+    "claude-code",
+    "acceptance-criteria",
+    "adr",
+    "project-memory"
+  ],
+  "homepage": "https://github.com/ThiagoNascBarros/specwright#readme",
+  "bugs": {
+    "url": "https://github.com/ThiagoNascBarros/specwright/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ThiagoNascBarros/specwright.git"
+  },
+  "license": "MIT",
+  "author": "ThiagoNascBarros",
   "type": "module",
   "engines": {
     "node": ">=22.12"
@@ -11,7 +32,9 @@
     "specwright-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
