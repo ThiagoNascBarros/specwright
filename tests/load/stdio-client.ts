@@ -9,7 +9,7 @@ export async function startServer(root: string) {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [entry],
-    env: { ...process.env, SPECWRIGHT_DIR: root } as Record<string, string>,
+    env: { ...process.env, SPECWRIGHT_ROOT: root } as Record<string, string>,
     stderr: 'pipe',
   });
   const client = new Client({ name: 'load-test', version: '0.0.0' });

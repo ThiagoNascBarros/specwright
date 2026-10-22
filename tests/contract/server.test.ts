@@ -31,7 +31,7 @@ describe('stdio contract', () => {
     expect(client.getServerVersion()).toMatchObject({ name: 'specwright', version: pkg.version });
   });
 
-  it('spec-reading AC-13 / context-pack AC-11: exposes exactly the 10 expected tools within the NFR-3 size budget', async () => {
+  it('FR-013 / SC-004: exposes exactly the 10 Spec Kit-named tools within the 12,000-character budget', async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...EXPECTED_TOOLS].sort());
@@ -39,11 +39,11 @@ describe('stdio contract', () => {
     for (const t of tools) expect(t.description!.split(/(?<=\.)\s+/).length).toBeLessThanOrEqual(2);
   });
 
-  it('answers a tool call over stdio (NOT_INITIALIZED when run outside a project)', async () => {
+  it('answers a tool call over stdio (no features outside a Spec Kit project)', async () => {
     const { client } = await connect();
-    const r = await client.callTool({ name: 'list_specs', arguments: {} });
-    expect(r.isError).toBe(true);
-    expect((r.content as Array<{ text: string }>)[0].text).toContain('NOT_INITIALIZED');
+    const r = await client.callTool({ name: 'list_features', arguments: {} });
+    expect(r.isError).toBeFalsy();
+    expect(JSON.parse((r.content as Array<{ text: string }>)[0].text)).toEqual({ features: [] });
   });
 
   it('exits after the client closes stdin', async () => {
