@@ -34,3 +34,9 @@ describe('context-pack: units', () => {
     expect(extractPaths([many])).toHaveLength(20);
   });
 });
+
+describe('US5: task file paths', () => {
+  it('FR-012: picks bare paths written in task descriptions ("in src/x.py")', () => {
+    expect(extractPaths(['- [ ] T009 [P] [US2] Create Album model in src/models/album.py', 'see https://x.io/a.md'])).toEqual(['src/models/album.py']);
+  });
+});

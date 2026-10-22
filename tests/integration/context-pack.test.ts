@@ -1,86 +1,70 @@
 import { describe, it, expect } from 'vitest';
-import { makeProject, connect, spec } from '../helpers.js';
-
-const auth = spec(
-  'auth',
-  `## Context
-Login with e-mail and password. Code lives in \`src/auth/login.ts\`.
-
-## Acceptance criteria
-- [ ] AC-1: lockout after 5 failed login attempts
-
-## Out of scope
-- social login
-`,
-  { title: 'Login' },
-);
-
-const billing = spec('billing', '## Context\nInvoices and payments in `src/billing/invoice.ts`.\n', { title: 'Billing' });
+import { copyFixture, connect, makeProject, specMd, tasksMd } from '../helpers.js';
 
 async function seeded(overrides = {}) {
-  const p = await makeProject({
-    '.specwright/specs/auth.md': auth,
-    '.specwright/specs/billing.md': billing,
-    '.specwright/specs/broken.md': spec('other', '## Context\nlogin lockout everywhere login lockout\n'),
-  });
+  const p = await copyFixture('speckit');
   const c = await connect(p.root, overrides);
-  await c.call('save_memory', { type: 'pitfall', title: 'Lockout counter resets', body: 'Reset the login counter in `src/auth/lockout.ts` after success.' });
-  await c.call('log_decision', { spec_id: 'auth', title: 'Lockout by account', decision: 'Lock by account, not by IP.' });
+  await c.call('save_memory', { type: 'pitfall', title: 'Album sorting is by taken date', body: 'Sort albums by `taken_at`, never by upload time, see `src/services/albums.py`.' });
+  await c.call('log_decision', { feature: '001-photo-albums', title: 'Albums sorted newest first', decision: 'Sort albums newest first.' });
   return { ...p, ...c };
 }
 
-describe('context-pack: pack_context', () => {
-  it('AC-1/AC-5: returns ranked spec sections, memories and decisions', async () => {
+type Item = { kind: string; ref: string; score: number; tokens: number; content: string };
+
+describe('US5: pack_context', () => {
+  it('US5-AS1 / FR-012: draws from spec and plan sections, tasks, constitution, decisions and notes', async () => {
     const { call } = await seeded();
-    const { data } = await call('pack_context', { task: 'implement login lockout' });
-    const kinds = new Set(data.items.map((i: { kind: string }) => i.kind));
-    expect(kinds).toEqual(new Set(['spec-section', 'memory', 'decision']));
+    const { data } = await call('pack_context', { task: 'album sorting by month, test first', budget_tokens: 4000 });
+    const kinds = new Set(data.items.map((i: Item) => i.kind));
+    for (const k of ['spec-section', 'task', 'constitution', 'decision', 'memory']) expect(kinds).toContain(k);
+    const refs = data.items.map((i: Item) => i.ref);
+    expect(refs).toContain('001-photo-albums/tasks.md#T010');
+    expect(refs.some((r: string) => /^001-photo-albums\/spec\.md#/.test(r))).toBe(true);
+    expect(refs).toContain('constitution#ii-test-first-non-negotiable');
     for (const i of data.items) expect(Object.keys(i).sort()).toEqual(['content', 'kind', 'ref', 'score', 'title', 'tokens']);
-    const scores = data.items.map((i: { score: number }) => i.score);
-    expect(scores).toEqual([...scores].sort((a, b) => b - a));
-    expect(data.items.some((i: { ref: string }) => i.ref.startsWith('billing'))).toBe(false);
   });
 
-  it('AC-2/AC-3: token accounting and budget', async () => {
+  it('FR-012: plan sections are candidates too', async () => {
     const { call } = await seeded();
-    const { data } = await call('pack_context', { task: 'login lockout', budget_tokens: 200 });
+    const { data } = await call('pack_context', { task: 'sqlite metadata storage' });
+    expect(data.items.some((i: Item) => i.kind === 'plan-section' && i.ref.startsWith('001-photo-albums/plan.md#'))).toBe(true);
+  });
+
+  it('US5-AS1: with a feature, its open tasks come first in file order and their paths are in files', async () => {
+    const { call } = await seeded();
+    const { data } = await call('pack_context', { task: 'add album sorting', feature: '001-photo-albums', budget_tokens: 1000 });
+    const tasks = data.items.filter((i: Item) => i.kind === 'task');
+    expect(data.items.slice(0, tasks.length).every((i: Item) => i.kind === 'task')).toBe(true);
+    expect(tasks.map((i: Item) => i.ref.split('#')[1])).toEqual(['T003', 'T004', 'T005', 'T006', 'T007', 'T008', 'T009', 'T010', 'T011']);
+    expect(data.items.every((i: Item) => !i.ref.startsWith('002-sharing'))).toBe(true);
+    expect(data.files).toContain('src/models/album.py');
+    expect(data.used_tokens).toBeLessThanOrEqual(1000);
+  });
+
+  it('FR-012: stays within the budget and accounts tokens as ceil(chars/4)', async () => {
+    const { call } = await seeded();
+    const { data } = await call('pack_context', { task: 'photos albums upload', budget_tokens: 200 });
     for (const i of data.items) expect(i.tokens).toBe(Math.ceil(i.content.length / 4));
-    expect(data.used_tokens).toBe(data.items.reduce((s: number, i: { tokens: number }) => s + i.tokens, 0));
     expect(data.used_tokens).toBeLessThanOrEqual(200);
+    expect(data.skipped).toBeGreaterThan(0);
   });
 
-  it('AC-4: spec_id restricts sections and pins acceptance criteria first', async () => {
-    const { call } = await seeded();
-    const { data } = await call('pack_context', { task: 'invoices', spec_id: 'auth' });
-    expect(data.items[0].ref).toBe('auth#acceptance-criteria');
-    expect(data.items.filter((i: { kind: string }) => i.kind === 'spec-section').every((i: { ref: string }) => i.ref.startsWith('auth#'))).toBe(true);
-  });
-
-  it('AC-6: files are the backticked paths of the selected items', async () => {
-    const { call } = await seeded();
-    const { data } = await call('pack_context', { task: 'login lockout' });
-    expect(data.files).toContain('src/auth/login.ts');
-    expect(data.files).toContain('src/auth/lockout.ts');
-    expect(data.files).not.toContain('src/billing/invoice.ts');
-  });
-
-  it('AC-7: invalid specs never contribute', async () => {
-    const { call } = await seeded();
-    const { data } = await call('pack_context', { task: 'login lockout' });
-    expect(data.items.some((i: { ref: string }) => i.ref.startsWith('broken'))).toBe(false);
-  });
-
-  it('AC-8: input errors', async () => {
-    const { call } = await seeded();
+  it('invalid features never contribute; errors for bad input', async () => {
+    const { root } = await makeProject({
+      'specs/001-ok/spec.md': specMd('Ok', '## Requirements\n\n- **FR-001**: login works\n'),
+      'specs/002-bad/tasks.md': tasksMd(['- [ ] T001 login login login']),
+    });
+    const { call } = await connect(root);
+    const { data } = await call('pack_context', { task: 'login' });
+    expect(data.items.every((i: Item) => !i.ref.startsWith('002-bad'))).toBe(true);
     expect((await call('pack_context', { task: 'the of ?' })).data).toMatchObject({ code: 'INVALID_INPUT' });
-    expect((await call('pack_context', { task: 'login', budget_tokens: 100 })).isError).toBe(true);
-    expect((await call('pack_context', { task: 'login', budget_tokens: 100_001 })).isError).toBe(true);
-    expect((await call('pack_context', { task: 'login', spec_id: 'nope' })).data).toMatchObject({ code: 'SPEC_NOT_FOUND' });
+    expect((await call('pack_context', { task: 'login', feature: '009-nope' })).data).toMatchObject({ code: 'FEATURE_NOT_FOUND' });
+    expect((await call('pack_context', { task: 'login', feature: '002-bad' })).data).toMatchObject({ code: 'INVALID_FEATURE' });
   });
 
-  it('AC-9: the effective budget is capped by maxResponseChars and the response is never truncated', async () => {
+  it('the effective budget is capped by maxResponseChars and the response is never truncated', async () => {
     const { call } = await seeded({ maxResponseChars: 3000 });
-    const { data, text } = await call('pack_context', { task: 'login lockout', budget_tokens: 100_000 });
+    const { data, text } = await call('pack_context', { task: 'album photos', budget_tokens: 100_000 });
     expect(data.budget_tokens).toBe(Math.floor((3000 - 2000) / 4));
     expect(data.truncated).toBeUndefined();
     expect(text.length).toBeLessThanOrEqual(3000);
