@@ -28,6 +28,7 @@ Specwright now follows the file format and vocabulary of [GitHub Spec Kit](https
 - `search_memory` and `pack_context` include the constitution principles. `pack_context` also uses `plan.md` sections and open tasks, and pins a feature's tasks first.
 - The repository itself is migrated: `specs/001`–`009` and `.specify/memory/constitution.md`.
 - A migration guide in the README.
+- Branch, commit and PR conventions with task codes (`SW-<n>`), documented in CONTRIBUTING.md; the history was renamed to follow them (SW-6).
 - README quick start uses copy-paste agent prompts for installing and for the first feature (from SW-9). It explains next to the `.mcp.json` example when an absolute `SPECWRIGHT_ROOT` is needed.
 
 ## [0.1.0] — 2026-10-21
