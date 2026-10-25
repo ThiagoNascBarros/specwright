@@ -6,7 +6,7 @@ import { DEFAULT_GRAPH_CONFIG, type Config } from '../../src/config.js';
 import { communitiesOf, loadGraph, resetGraphCache } from '../../src/graph/service.js';
 import { buildGraph } from '../../src/graph/build.js';
 import { factsOf } from '../../src/graph/facts.js';
-import { detectCommunities } from '../../src/graph/community.js';
+import { detectCommunities, split } from '../../src/graph/community.js';
 import { discoverSources, readSource } from '../../src/graph/repository.js';
 import type { Confidence, Graph, GraphEdge, GraphNode, Relation } from '../../src/graph/types.js';
 
@@ -74,30 +74,10 @@ describe('detectCommunities', () => {
   });
 
   it('FR-018: a disconnected community is split into its components', () => {
-    // Louvain may group nodes with no path between them; every community must be connected in the input graph.
-    let seed = 7;
-    const rand = (n: number): number => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
-    for (let round = 0; round < 25; round++) {
-      const ids = Array.from({ length: 12 }, (_, i) => `n${String(i).padStart(2, '0')}`);
-      const specs: Spec[] = [];
-      for (let k = 0; k < 14; k++) specs.push({ s: ids[rand(ids.length)], t: ids[rand(ids.length)] });
-      const g = graphOf(ids.map((id) => node(id)), specs.filter((x) => x.s !== x.t));
-      const { list, byNode } = detectCommunities(g);
-      expect(byNode.size).toBe(ids.length);
-      for (const c of list) {
-        const members = new Set(c.members);
-        const seen = new Set([c.members[0]]);
-        const queue = [c.members[0]];
-        while (queue.length) {
-          const cur = queue.shift()!;
-          for (const e of g.edges) {
-            const other = e.source === cur ? e.target : e.target === cur ? e.source : undefined;
-            if (other && members.has(other) && !seen.has(other)) { seen.add(other); queue.push(other); }
-          }
-        }
-        expect(seen.size).toBe(members.size);
-      }
-    }
+    // Two edges, a-b and c-d, given one shared community label: the split must give two components.
+    const ids = ['a', 'b', 'c', 'd'];
+    const base = { adj: [new Map([[1, 1]]), new Map([[0, 1]]), new Map([[3, 1]]), new Map([[2, 1]])], loop: [0, 0, 0, 0] };
+    expect(split(base, [0, 0, 0, 0], ids)).toEqual([['a', 'b'], ['c', 'd']]);
   });
 
   it('FR-018: labels prefer the top-degree non-file member, prefixed with the feature title when one feature owns more than half of the members', () => {

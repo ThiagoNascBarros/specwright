@@ -6,7 +6,7 @@ export type Community = { id: number; label: string; members: string[] };
 export type Communities = { byNode: Map<string, number>; list: Community[] };
 
 /** Weighted undirected adjacency over the nodes' sorted index. `loop` is the internal weight of a supernode. */
-interface Level { adj: Map<number, number>[]; loop: number[] }
+export interface Level { adj: Map<number, number>[]; loop: number[] }
 
 const EPS = 1e-10;
 const MAX_SWEEPS = 50;
@@ -44,8 +44,7 @@ function louvain(base: Level): number[] {
   let level = base;
   let membership = base.adj.map((_, i) => i);
   for (let depth = 0; depth < MAX_LEVELS; depth++) {
-    const labels = localMoving(level);
-    const count = Math.max(...labels) + 1;
+    const { labels, count } = localMoving(level);
     if (count === level.adj.length) break;
     membership = membership.map((s) => labels[s]);
     level = aggregate(level, labels, count);
@@ -54,12 +53,12 @@ function louvain(base: Level): number[] {
 }
 
 /** Visits nodes in index order and moves each to the best neighbouring community (lowest index on ties). Returns relabelled communities. */
-function localMoving(level: Level): number[] {
+function localMoving(level: Level): { labels: number[]; count: number } {
   const n = level.adj.length;
   const deg = level.adj.map((m, i) => sum(m.values()) + 2 * level.loop[i]);
   const m = sum(deg) / 2;
   const comm = level.adj.map((_, i) => i);
-  if (m === 0) return comm;
+  if (m === 0) return relabel(comm);
   const tot = deg.slice();
   for (let sweep = 0; sweep < MAX_SWEEPS; sweep++) {
     let moved = false;
@@ -84,9 +83,10 @@ function localMoving(level: Level): number[] {
 }
 
 /** Community labels renumbered 0.. by first appearance, so each label is its smallest member's rank. */
-function relabel(comm: number[]): number[] {
+function relabel(comm: number[]): { labels: number[]; count: number } {
   const map = new Map<number, number>();
-  return comm.map((c) => { if (!map.has(c)) map.set(c, map.size); return map.get(c)!; });
+  const labels = comm.map((c) => { if (!map.has(c)) map.set(c, map.size); return map.get(c)!; });
+  return { labels, count: map.size };
 }
 
 /** Collapses each community into one supernode; internal weight becomes the supernode's loop. */
@@ -106,7 +106,7 @@ function aggregate(level: Level, labels: number[], count: number): Level {
 }
 
 /** Each community is split into its connected components over the base graph (Louvain can join unconnected parts). */
-function split(base: Level, comm: number[], ids: string[]): string[][] {
+export function split(base: Level, comm: number[], ids: string[]): string[][] {
   const part = comm.map(() => -1);
   let next = 0;
   for (let s = 0; s < comm.length; s++) {
