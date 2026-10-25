@@ -938,10 +938,10 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Tool contracts" › "Changes to existing tools".
 
-- [ ] T065 [P] [US8] Write failing tests:
+- [X] T065 [P] [US8] Write failing tests:
   - unit `FR-024: an item linked to a top-3 item gets max(score, 0.5 × seed score); boosts do not stack; pinned items are not seeds`;
   - integration `US8-AS2: on the brain fixture, pack_context { task: "album sorting", feature: "001-photo-albums", graph: true } includes decision 0001 (ref "0001"); without graph the response equals the response before this change` (snapshot the JSON in the test).
-- [ ] T066 [US8] Implement `graph-boost.ts` and the `graph` flag. The description stays ≤ 2 sentences.
+- [X] T066 [US8] Implement `graph-boost.ts` and the `graph` flag. The description stays ≤ 2 sentences.
 - Verify: `npm test` is green.
 - Commit: `feat(context): boost pack_context items linked in the graph` + `Refs: SW-10`
 
