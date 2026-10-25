@@ -9,7 +9,7 @@ const entry = fileURLToPath(new URL('../../dist/index.js', import.meta.url));
 const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
 // Every tool the finished server must expose; each spec adds its own.
-export const EXPECTED_TOOLS = ['check_against_spec', 'extraction_batch', 'find_path', 'get_artifact', 'get_node', 'list_decisions', 'list_features', 'list_open_tasks', 'log_decision', 'pack_context', 'query_graph', 'save_memory', 'save_relations', 'search_memory', 'set_task_status'];
+export const EXPECTED_TOOLS = ['check_against_spec', 'extraction_batch', 'find_path', 'get_artifact', 'get_node', 'graph_report', 'list_decisions', 'list_features', 'list_open_tasks', 'log_decision', 'pack_context', 'query_graph', 'save_memory', 'save_relations', 'search_memory', 'set_task_status'];
 
 let client: Client | undefined;
 afterEach(async () => {

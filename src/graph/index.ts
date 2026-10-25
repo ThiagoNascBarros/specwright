@@ -6,6 +6,7 @@ import { registerGetNode } from './tools/get-node.js';
 import { registerQueryGraph } from './tools/query-graph.js';
 import { registerExtractionBatch } from './tools/extraction-batch.js';
 import { registerSaveRelations } from './tools/save-relations.js';
+import { registerGraphReport } from './tools/graph-report.js';
 
 /** Registers the tools of the graph module. */
 export function register(server: McpServer, config: Config, deps: Deps) {
@@ -14,4 +15,5 @@ export function register(server: McpServer, config: Config, deps: Deps) {
   registerFindPath(server, config, deps);
   registerExtractionBatch(server, config, deps);
   registerSaveRelations(server, config, deps);
+  registerGraphReport(server, config, deps);
 }

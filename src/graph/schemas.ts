@@ -49,3 +49,10 @@ export const saveRelationsInput = z.object({
   concepts: z.array(z.object({ id: z.string(), label: z.string(), summary: z.string().optional() })).optional(),
   covered: z.array(z.object({ unit: z.string(), hash: z.string() })).optional(),
 });
+
+export const graphReportInput = z.object({
+  top: z.number().int().min(1).max(50).optional(),
+  community: z.number().int().min(0).optional(),
+  offset: z.number().int().min(0).optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+});
