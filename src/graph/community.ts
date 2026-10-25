@@ -60,20 +60,29 @@ function localMoving(level: Level): { labels: number[]; count: number } {
   const comm = level.adj.map((_, i) => i);
   if (m === 0) return relabel(comm);
   const tot = deg.slice();
+  // Per-node weights to neighbouring communities, in reusable arrays instead of a Map per visit (same sums, same order).
+  const weight = new Float64Array(n);
+  const seen = new Uint8Array(n);
   for (let sweep = 0; sweep < MAX_SWEEPS; sweep++) {
     let moved = false;
     for (let i = 0; i < n; i++) {
       const own = comm[i];
-      const weightTo = new Map<number, number>();
-      for (const [j, w] of level.adj[i]) weightTo.set(comm[j], (weightTo.get(comm[j]) ?? 0) + w);
+      const touched: number[] = [];
+      for (const [j, w] of level.adj[i]) {
+        const c = comm[j];
+        if (!seen[c]) { seen[c] = 1; touched.push(c); }
+        weight[c] += w;
+      }
       tot[own] -= deg[i];
-      const gain = (c: number): number => (weightTo.get(c) ?? 0) / m - (tot[c] * deg[i]) / (2 * m * m);
+      const gain = (c: number): number => weight[c] / m - (tot[c] * deg[i]) / (2 * m * m);
       let best = own;
       let bestGain = gain(own);
-      for (const c of [...weightTo.keys()].sort((x, y) => x - y)) {
+      touched.sort((x, y) => x - y);
+      for (const c of touched) {
         const g = gain(c);
         if (c !== own && g > bestGain + EPS) { best = c; bestGain = g; }
       }
+      for (const c of touched) { seen[c] = 0; weight[c] = 0; }
       tot[best] += deg[i];
       if (best !== own) { comm[i] = best; moved = true; }
     }
