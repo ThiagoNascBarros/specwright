@@ -37,3 +37,17 @@ export function snippet(text: string, terms: string[], max = 200): string {
   const window = flat.slice(start, start + max - 2);
   return `${start > 0 ? '…' : ''}${window}${start + max - 2 < flat.length ? '…' : ''}`.slice(0, max);
 }
+
+// A backticked token that looks like a file path: has a slash or a file extension, no spaces.
+const CODE_SPAN = /`([^`\s]+)`/g;
+// A bare path in prose, as Spec Kit tasks write them: "Create Album model in src/models/album.py".
+const BARE_PATH = /(?:^|\s)((?:[\w@.-]+\/)+[\w@.-]+\.[a-zA-Z0-9]{1,8})(?=[\s,;:)]|\.(?:\s|$)|$)/g;
+const PATH_LIKE = /^(?:\.{0,2}\/)?[\w@.-]+(?:\/[\w@.-]+)*\.[a-zA-Z0-9]{1,8}$|^[\w@.-]+(?:\/[\w@.-]+)+\/?$/;
+
+/** Paths cited in backticks or bare in `text`, unique, in order of first appearance. Pure text work. */
+export function citedPaths(text: string): string[] {
+  const found: Array<[number, string]> = [];
+  for (const m of text.matchAll(CODE_SPAN)) if (PATH_LIKE.test(m[1])) found.push([m.index, m[1]]);
+  for (const m of text.replace(CODE_SPAN, (c) => ' '.repeat(c.length)).matchAll(BARE_PATH)) found.push([m.index + m[0].indexOf(m[1]), m[1]]);
+  return [...new Set(found.sort((a, b) => a[0] - b[0]).map(([, p]) => p))];
+}

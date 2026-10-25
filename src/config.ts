@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { isSafeRelativeDir } from './storage/paths.js';
 
 export const GRAPH_CACHE_MODES = ['disk', 'memory', 'off'] as const;
 
@@ -23,14 +24,6 @@ export const CONFIG_FILE = '.specify/specwright.json';
 const GRAPH_DIR = '.specify/graph';
 export const DEFAULT_GRAPH_CONFIG: GraphConfig = { include: [], cache: 'disk', vaultDir: `${GRAPH_DIR}/vault` };
 const GRAPH_INCLUDE_MAX = 20;
-
-// shortcut: the shared path guard (Task 3) will replace this inline check.
-function isSafeRelativeDir(dir: string): boolean {
-  if (dir.includes('\\') || dir.startsWith('/') || /^[A-Za-z]:/.test(dir)) return false;
-  const segments = dir.replace(/\/+$/, '').split('/');
-  if (segments.some((s) => s === '' || s.startsWith('.') || s === 'node_modules')) return false;
-  return segments[0] !== 'specs';
-}
 
 function parseGraph(value: unknown, file: string): GraphConfig {
   const invalid = (message: string) => new Error(`Invalid ${file}: ${message}`);
