@@ -1,4 +1,5 @@
 ---
+title: Keep ids stable
 type: convention
 tags: [ids]
 ---

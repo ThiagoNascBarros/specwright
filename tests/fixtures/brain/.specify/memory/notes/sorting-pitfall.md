@@ -1,4 +1,5 @@
 ---
+title: Sorting pitfall
 type: pitfall
 tags: [sorting]
 ---
