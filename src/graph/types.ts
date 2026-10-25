@@ -69,3 +69,6 @@ export interface Graph {
   rejected: Set<string>;                   // "source|relation|target" keys of REJECTED rows
   diagnostics: Diagnostic[];
 }
+
+/** A file the exports write, root-relative path and full content. */
+export interface ExportFile { path: string; content: string }
