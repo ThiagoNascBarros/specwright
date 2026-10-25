@@ -630,14 +630,14 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Tool contracts" › `save_relations` and § "Ledger format".
 
-- [ ] T040 [P] [US2] Write failing tests:
+- [X] T040 [P] [US2] Write failing tests:
   - `FR-014: each rejection reason is produced by one crafted item, and valid items in the same input still produce changes`;
   - `FR-014: concepts defined in the same input are valid endpoints`;
   - `FR-015: relations go to the scope of their source (concept source → project), coverage to the unit's scope`;
   - `FR-016: a covered hash that differs from the unit's → stale`;
   - `US2-AS6: an INFERRED save of a triple REJECTED in the ledgers → previously_rejected`;
   - `FR-015: writeLedgerChanges creates the file, then a second identical call reports written=false`.
-- [ ] T041 [US2] Implement.
+- [X] T041 [US2] Implement.
 - Verify: `npx vitest run tests/unit/graph-relations.test.ts tests/unit/graph-repository.test.ts`.
 - Commit: `feat(graph): validate and store extracted relations, concepts and coverage` + `Refs: SW-10`
 
