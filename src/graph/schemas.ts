@@ -28,3 +28,24 @@ export const findPathInput = z.object({
   max_hops: z.number().int().min(1).max(8).optional(),
   include_ambiguous: z.boolean().optional(),
 });
+
+export const extractionBatchInput = z.object({
+  units: z.array(refSchema).min(1).max(30).optional(),
+  feature: featureIdSchema.optional(),
+  budget_tokens: z.number().int().min(500).max(8000).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+});
+
+// Bounds (sizes, lengths, 0..1 score) are checked in runSaveRelations and prepareSave: the listing entry must stay under 1,200 characters.
+export const saveRelationsInput = z.object({
+  relations: z.array(z.object({
+    source: z.string(),
+    relation: z.string(),
+    target: z.string(),
+    confidence: z.enum(['INFERRED', 'AMBIGUOUS', 'REJECTED']),
+    score: z.number(),
+    evidence: z.string().optional(),
+  })).optional(),
+  concepts: z.array(z.object({ id: z.string(), label: z.string(), summary: z.string().optional() })).optional(),
+  covered: z.array(z.object({ unit: z.string(), hash: z.string() })).optional(),
+});

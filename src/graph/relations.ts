@@ -21,13 +21,20 @@ export type Rejection = {
 const BANDS = { INFERRED: [0.5, 0.99], AMBIGUOUS: [0.1, 0.49] } as const;
 
 /** Validates each item on its own and groups the valid ones into ledger changes per scope (plan.md "Tool contracts", save_relations). Pure. */
-export function prepareSave(graph: Graph, input: SaveInput, today: string): { changes: Map<string, LedgerChanges>; rejected: Rejection[] } {
+export function prepareSave(graph: Graph, input: SaveInput, today: string): { changes: Map<string, LedgerChanges>; rejected: Rejection[]; origins: Map<string, number[]> } {
   const changes = new Map<string, LedgerChanges>();
   const rejected: Rejection[] = [];
+  // For each scope, the input index of every relation in changes.relations, in the same order.
+  const origins = new Map<string, number[]>();
   const bucket = (scope: string): LedgerChanges => {
     let c = changes.get(scope);
     if (!c) changes.set(scope, (c = {}));
     return c;
+  };
+  const originsOf = (scope: string): number[] => {
+    let o = origins.get(scope);
+    if (!o) origins.set(scope, (o = []));
+    return o;
   };
   const reject = (field: Rejection['field'], index: number, reason: Rejection['reason']): void => {
     rejected.push({ field, index, reason });
@@ -76,6 +83,7 @@ export function prepareSave(graph: Graph, input: SaveInput, today: string): { ch
     (bucket(source.scope).relations ??= []).push({
       source: source.id, relation: r.relation, target: target.id, confidence: r.confidence, score: r.score, evidence: r.evidence ?? '', date: today,
     });
+    originsOf(source.scope).push(index);
   });
 
   (input.covered ?? []).forEach((c, index) => {
@@ -85,5 +93,5 @@ export function prepareSave(graph: Graph, input: SaveInput, today: string): { ch
     (bucket(unit.scope).coverage ??= []).push({ unit: c.unit, hash: c.hash, version: EXTRACTOR_VERSION, date: today });
   });
 
-  return { changes, rejected };
+  return { changes, rejected, origins };
 }
