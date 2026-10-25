@@ -51,11 +51,14 @@ async function planSections(root: string, f: Feature): Promise<Section[]> {
   }
 }
 
+/** The ranking order: score desc, then fewer tokens, then ref. */
+export const byRank = (a: ContextItem, b: ContextItem): number => b.score - a.score || a.tokens - b.tokens || a.ref.localeCompare(b.ref);
+
 /**
- * Scored candidates for `terms`. `pinned` holds the open tasks of `featureId` in file order
+ * Scored candidates for `terms`. `keepZero` keeps unscored items too, so a graph boost can lift them. `pinned` holds the open tasks of `featureId` in file order
  * (when given); `ranked` holds every other relevant item, best first.
  */
-export async function collectCandidates(root: string, terms: string[], featureId?: string): Promise<{ pinned: ContextItem[]; ranked: ContextItem[] }> {
+export async function collectCandidates(root: string, terms: string[], featureId?: string, keepZero = false): Promise<{ pinned: ContextItem[]; ranked: ContextItem[] }> {
   let features: Feature[];
   if (featureId) {
     const { feature } = await readFeature(root, featureId);
@@ -81,6 +84,6 @@ export async function collectCandidates(root: string, terms: string[], featureId
     ...memories.map((m) => makeItem({ kind: 'memory', ref: m.id, title: m.title, score: scoreNote(unique, m), content: m.body })),
     ...decisions.map((d) => makeItem({ kind: 'decision', ref: d.id, title: d.title, score: scoreNote(unique, { title: d.title, tags: [], body: d.body }), content: d.body })),
   ];
-  const ranked = all.filter((i) => i.score > 0).sort((a, b) => b.score - a.score || a.tokens - b.tokens || a.ref.localeCompare(b.ref));
+  const ranked = all.filter((i) => keepZero || i.score > 0).sort(byRank);
   return { pinned, ranked };
 }

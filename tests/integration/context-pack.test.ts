@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { copyFixture, connect, makeProject, specMd, tasksMd } from '../helpers.js';
+import { DEFAULT_GRAPH_CONFIG } from '../../src/config.js';
 
 async function seeded(overrides = {}) {
   const p = await copyFixture('speckit');
@@ -68,5 +69,36 @@ describe('US5: pack_context', () => {
     expect(data.budget_tokens).toBe(Math.floor((3000 - 2000) / 4));
     expect(data.truncated).toBeUndefined();
     expect(text.length).toBeLessThanOrEqual(3000);
+  });
+});
+
+describe('pack_context and the graph', () => {
+  it('US8-AS2: pack_context with graph: true includes decision 0001 (ref "0001")', async () => {
+    const { root } = await copyFixture('brain');
+    const { call } = await connect(root, { graph: DEFAULT_GRAPH_CONFIG });
+    const { isError, data } = await call('pack_context', { task: 'album sorting', feature: '001-photo-albums', graph: true });
+    expect(isError).toBe(false);
+    expect(data.items.map((i: { ref: string }) => i.ref)).toContain('0001');
+  });
+
+  it('US8-AS2: without graph the response equals the response before this change', async () => {
+    const { root } = await copyFixture('brain');
+    const { call } = await connect(root);
+    const { data } = await call('pack_context', { task: 'album sorting', feature: '001-photo-albums' });
+    expect(data).toEqual({
+      budget_tokens: 4000,
+      used_tokens: 475,
+      items: [
+        expect.objectContaining({ kind: 'task', ref: '001-photo-albums/tasks.md#T003', score: 1, tokens: 18 }),
+        expect.objectContaining({ kind: 'task', ref: '001-photo-albums/tasks.md#T005', score: 2, tokens: 21 }),
+        expect.objectContaining({ kind: 'memory', ref: 'sorting-pitfall', score: 7, tokens: 33 }),
+        expect.objectContaining({ kind: 'spec-section', ref: '001-photo-albums/spec.md#user-scenarios-testing-mandatory', score: 6, tokens: 236 }),
+        expect.objectContaining({ kind: 'spec-section', ref: '001-photo-albums/spec.md#requirements-mandatory', score: 5, tokens: 101 }),
+        expect.objectContaining({ kind: 'spec-section', ref: '001-photo-albums/spec.md#success-criteria-mandatory', score: 1, tokens: 29 }),
+        expect.objectContaining({ kind: 'plan-section', ref: '001-photo-albums/plan.md#summary', score: 1, tokens: 37 }),
+      ],
+      files: ['src/albums/create.ts', 'src/albums/sort.ts', 'src/albums/model.ts'],
+      skipped: 0,
+    });
   });
 });
