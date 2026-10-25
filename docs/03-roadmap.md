@@ -68,12 +68,17 @@ Phase 3 also added the stdio load suite, which found and fixed two defects (deci
 
 Phases 1–3 above keep their v0.1.0 names; their specs now live in `specs/001-…` to `specs/008-…`. Test record: [tdd/phase-4.md](tdd/phase-4.md).
 
+## Phase 5: Second brain — done
+
+| Feature | Delivery | Requirements | Status |
+|---|---|---|---|
+| `010-second-brain` | Knowledge graph over specs, decisions, notes and included docs; 8 tools, CLI, exports | FR-012–FR-030, NFR-6, NFR-7 | [x] |
+
 ## Next (not scheduled)
 
 These items would each need a spec. Each one stays out until real use asks for it:
 - publishing to npm (and dropping `private: true`);
 - versioning of `config.json` and of the spec format (PRD Q3);
-- a cache for very large projects, only if NFR-7 fails in practice (ADR-0004);
 - reading `.specify/feature.json` to default the active feature;
 - a `base_ref` option for `check_against_spec`, only if passing the diff proves too costly (decision 0005).
 

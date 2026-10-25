@@ -16,7 +16,7 @@ Everything stays plain Markdown in your repository, in Spec Kit's own layout.
 [![CI](https://github.com/ThiagoNascBarros/specwright/actions/workflows/ci.yml/badge.svg)](https://github.com/ThiagoNascBarros/specwright/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%E2%89%A5%2022.12-339933)
-![MCP tools](https://img.shields.io/badge/MCP%20tools-10-7c3aed)
+![MCP tools](https://img.shields.io/badge/MCP%20tools-18-7c3aed)
 ![Spec Kit](https://img.shields.io/badge/Spec%20Kit-v1.2.x-2ea44f)
 
 </div>
@@ -54,7 +54,7 @@ Specwright never creates features, plans or tasks. That stays with Spec Kit's sk
 
 - **Your files, Spec Kit's format.** No proprietary layout. Everything is versioned in Git and readable by humans.
 - **No LLM inside the server.** It needs no API key and makes no model calls. The agent that calls it does the judging.
-- **Few, well-described tools.** There are 10, and the whole `tools/list` stays under 12,000 characters.
+- **Well-described, non-overlapping tools.** There are 18, and the whole `tools/list` stays under 16,000 characters.
 - **No database, no cache.** Files are reread on every call, so nothing goes stale.
 - **Safe by default.**
   - The server has no network access and runs no commands.
@@ -136,11 +136,33 @@ To try it without Spec Kit, copy [`examples/starter/`](examples/starter/) into a
 Add this to your project's `CLAUDE.md` (or your agent's instructions):
 
 ```markdown
+## Specwright
+
+Specwright keeps this project's specs, tasks, decisions and notes as a knowledge graph. Before reading whole files or searching for a spec or design question, call query_graph (get_node for one id, find_path for how two things relate) and read only what it points to. Start a task with pack_context and close it with check_against_spec, set_task_status and log_decision. To grow the graph, call extraction_batch for a plan of pending units, give each batch to one worker that calls extraction_batch with those units and then save_relations with the relations, concepts and covered hashes; parallel workers must take different batches. Run lint_memory after renaming or deleting files. Files under .specify/graph/ are derived; never edit them.
+
 ## Spec Kit + Specwright
 - Start a task with `pack_context` (with the feature id), or `get_artifact` for one section. Do not read whole spec files.
 - Before saying a task is done, call `check_against_spec` with your diff and report any unmet requirement or out-of-scope change.
 - After verifying a task, call `set_task_status`. Record non-obvious choices with `log_decision`.
 - Save conventions and pitfalls with `save_memory`; check `search_memory` before changing an approach.
+```
+
+## Second brain
+
+Specwright turns `specs/`, `.specify/memory/` and any `graph.include` folders into one knowledge graph.
+
+- **Agents:** `query_graph`, `get_node`, `find_path` and `graph_report` answer questions from the graph; `extraction_batch` and `save_relations` grow it; `lint_memory` checks it.
+- **People:** `specwright-mcp graph report`, `graph query "album sorting"` and `graph lint` print the same JSON from a terminal.
+- **Views:** `export_graph` writes `.specify/graph/graph.json`, `.specify/graph/GRAPH_REPORT.md` (Mermaid diagrams render on GitHub) and an Obsidian vault at `graph.vaultDir` (default `.specify/graph/vault`).
+- **Obsidian:** open the vault with "Open folder as vault". The default path starts with a dot (`.specify/graph/vault`), so if the folder picker hides it, set `graph.vaultDir` to a visible folder such as `brain` and open that one.
+- **Config:** `graph.include` lists Markdown folders to read (for example `["docs"]`, read-only); `graph.cache` is `disk`, `memory` or `off`.
+
+Codex config (the agent instructions are in [Recommended agent instructions](#recommended-agent-instructions)):
+
+```toml
+[mcp_servers.specwright]
+command = "npx"
+args = ["-y", "specwright-mcp"]
 ```
 
 ## Configuration

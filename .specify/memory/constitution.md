@@ -8,23 +8,23 @@ Specs, plans, tasks, decisions and notes are plain Markdown in the project's Git
 ### II. No LLM in the Server
 The server never calls a model and never needs an API key. It returns structured data; the agent that called it does the judging.
 
-### III. Few, Well-Described Tools
-At most 10 tools in total. Each description is at most 2 sentences and says when to use the tool, and the whole `tools/list` stays within 12,000 characters.
+### III. Well-Described, Non-Overlapping Tools
+Every tool answers a distinct question an agent asks, and a new tool must not overlap an existing one. Each description is at most 2 sentences and says when to use the tool; each tool entry in `tools/list` stays within 1,200 characters and the whole listing within 16,000 characters. Every tool declares `openWorldHint: false` and its read-only or non-destructive hints.
 
-### IV. No Database, No Cache
-State is re-read from the files on every call, so nothing can go stale. An index or cache is added only if a measured performance budget fails in real use.
+### IV. Files Are the Source of Truth
+State lives in the project's Markdown files. A cache or index is allowed only when it is derived from those files, can be deleted and rebuilt without loss, is checked against the files on every call so it never serves stale data, and lives in git-ignored `.specify/graph/`. No database server, vector index or external service.
 
 ### V. Test-First (NON-NEGOTIABLE)
 Every requirement and acceptance scenario gets a test, named after its id, that is seen failing before the implementation. A feature is done only when typecheck, `npm test` and `npm run test:load` pass, locally and in CI.
 
 ### VI. Safe File Access
-Only `specs/` and `.specify/` are read; only `tasks.md` checkboxes and `.specify/memory/**` are written. Writes are atomic and byte-minimal, new files never overwrite existing ones, and symlinks cannot escape.
+Only `specs/`, `.specify/` and the Markdown folders listed in `graph.include` are read, and included folders are never written. Only `tasks.md` checkboxes, `.specify/memory/**`, derived files in `.specify/graph/**` and the configured Obsidian export folder are written. Writes are atomic and byte-minimal, new files never overwrite existing ones, and symlinks cannot escape.
 
 ## Additional Constraints
 
 - Node.js 22.12 or later, TypeScript in strict mode, ESM.
 - Runtime dependencies are limited to `@modelcontextprotocol/server`, `zod` and `yaml`; any other one needs a recorded decision.
-- No network access, no `child_process`, and nothing written to stdout except JSON-RPC.
+- No network access, no `child_process`, and nothing written to stdout except JSON-RPC (the `graph` CLI subcommand prints its result to stdout and never starts the server).
 - All code, comments, docs, specs, commits and PR text are in English.
 
 ## Development Workflow
@@ -37,4 +37,4 @@ Only `specs/` and `.specify/` are read; only `tasks.md` checkboxes and `.specify
 
 This constitution supersedes other practices in this repository. An amendment needs a PR that explains the change and its impact. It also updates the version: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-21 | **Last Amended**: 2026-10-21
+**Version**: 2.0.0 | **Ratified**: 2026-10-21 | **Last Amended**: 2026-10-24

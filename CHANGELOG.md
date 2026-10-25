@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-24
+
+The second brain: specs, decisions, notes and documents become one knowledge graph that agents query and people can browse.
+
+### Added
+- Eight graph tools: `query_graph`, `get_node`, `find_path`, `graph_report`, `extraction_batch`, `save_relations`, `lint_memory` and `export_graph` (18 tools in total).
+- `specwright-mcp graph <command>` CLI with the same JSON as the tools; exit codes 0–4.
+- Exports: `graph.json`, `GRAPH_REPORT.md` with Mermaid diagrams, and an Obsidian vault at `graph.vaultDir`.
+- `graph.include` folders are read as read-only `doc` nodes.
+- `pack_context` takes `graph: true` to follow links from the top matches.
+- The server sends agent instructions on `initialize`.
+
+### Changed
+- Every tool declares `openWorldHint: false`; read tools declare `readOnlyHint`, writes declare `destructiveHint: false`.
+- Constitution amended to 2.0.0: the tool cap is replaced by well-described, non-overlapping tools; the cache rule is replaced by derived, rebuildable caches in `.specify/graph/`.
+
 ## [0.2.0] — 2026-10-21
 
 Specwright now follows the file format and vocabulary of [GitHub Spec Kit](https://github.com/github/spec-kit) v1.2.x.

@@ -56,7 +56,7 @@ spec -> code -> validation -> decision recorded -> spec/memory updated
 - N1. The server does **not** call an LLM nor judge compliance; it delivers structured data and the agent decides.
 - N2. It is not a task/issue manager and does not replace Jira, Linear or similar tools.
 - N3. It does not generate code or specs automatically.
-- N4. There is no database nor vector index at the start.
+- N4. No database server nor vector index; derived, rebuildable caches are allowed.
 - N5. No web interface, no multi-user/concurrency across machines (Git is the synchronization mechanism).
 
 ## 5. Functional requirements
@@ -82,7 +82,7 @@ Priority: **P0** = Phase 1 (core), **P1** = Phase 2, **P2** = Phase 3.
 | ID | Requirement | Target |
 |---|---|---|
 | NFR-1 | No LLM and no API key in the server | 0 model calls |
-| NFR-2 | Lean tool surface | ≤ 10 tools in total |
+| NFR-2 | No overlapping tools | each tool answers a distinct question; descriptions ≤ 2 sentences |
 | NFR-3 | Context cost of tools | `tools/list` JSON ≤ 12,000 characters (≈ 3,000 tokens); each tool description ≤ 2 sentences |
 | NFR-4 | Token-efficient responses | `get_artifact` by section; listings without body; response truncated above `maxResponseChars` (default 20,000) |
 | NFR-5 | Safe writes and clean diffs | atomic writes; only the necessary line/file is changed; no reformatting of the user's Markdown |
