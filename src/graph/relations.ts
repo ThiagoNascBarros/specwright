@@ -52,10 +52,18 @@ export function prepareSave(graph: Graph, input: SaveInput, today: string): { ch
     }
   };
 
-  (input.relations ?? []).forEach((r, index) => {
-    const source = endpoint(r.source);
+  const relations = input.relations ?? [];
+  const ends = relations.map((r) => ({ source: endpoint(r.source), target: endpoint(r.target) }));
+  // Triples retired by a REJECTED item of this call: a non-REJECTED item for them is refused whatever its position.
+  const retired = new Set<string>();
+  relations.forEach((r, i) => {
+    const { source, target } = ends[i];
+    if (r.confidence === 'REJECTED' && source && target) retired.add(tripleKey({ source: source.id, relation: r.relation as Relation, target: target.id }));
+  });
+
+  relations.forEach((r, index) => {
+    const { source, target } = ends[index];
     if (!source) return reject('relations', index, 'unknown_source');
-    const target = endpoint(r.target);
     if (!target) return reject('relations', index, 'unknown_target');
     if (source.id === target.id) return reject('relations', index, 'self_relation');
     if (!(SEMANTIC_RELATIONS as readonly string[]).includes(r.relation)) return reject('relations', index, 'unknown_relation');
@@ -64,7 +72,7 @@ export function prepareSave(graph: Graph, input: SaveInput, today: string): { ch
       : r.score >= BANDS[r.confidence][0] && r.score <= BANDS[r.confidence][1];
     if (!inBand) return reject('relations', index, 'score_out_of_range');
     const key = tripleKey({ source: source.id, relation: r.relation as Relation, target: target.id });
-    if (r.confidence !== 'REJECTED' && graph.rejected.has(key)) return reject('relations', index, 'previously_rejected');
+    if (r.confidence !== 'REJECTED' && (graph.rejected.has(key) || retired.has(key))) return reject('relations', index, 'previously_rejected');
     (bucket(source.scope).relations ??= []).push({
       source: source.id, relation: r.relation, target: target.id, confidence: r.confidence, score: r.score, evidence: r.evidence ?? '', date: today,
     });

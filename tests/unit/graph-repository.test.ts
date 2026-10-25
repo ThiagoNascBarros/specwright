@@ -63,3 +63,34 @@ describe('graph repository: ledger writes', () => {
     expect(second.stats.relations).toEqual({ added: 0, updated: 0, unchanged: 1 });
   });
 });
+
+describe('graph repository: REJECTED rows survive writes', () => {
+  const rel = (target: string, confidence: 'INFERRED' | 'REJECTED', score: number) => ({
+    source: 'decision:0001', relation: 'uses', target, confidence, score, evidence: '', date: '2026-10-24',
+  });
+
+  it('FR-014: writeLedgerChanges refuses an INFERRED row whose triple is REJECTED in the file, and still writes the other rows', async () => {
+    const { root } = await makeProject();
+    await writeLedgerChanges(root, 'project', { relations: [rel('note:x', 'REJECTED', 0)] });
+    const r = await writeLedgerChanges(root, 'project', { relations: [rel('note:x', 'INFERRED', 0.8), rel('note:y', 'INFERRED', 0.8)] });
+    expect(r.rejected).toEqual([{ field: 'relations', index: 0, reason: 'previously_rejected' }]);
+    expect(r.written).toBe(true);
+    const text = await readFile(join(root, r.path), 'utf8');
+    expect(text).toContain('| decision:0001 | uses | note:x | REJECTED | 0 |');
+    expect(text).not.toContain('| decision:0001 | uses | note:x | INFERRED');
+    expect(text).toContain('| decision:0001 | uses | note:y | INFERRED | 0.8 |');
+  });
+
+  it('FR-015: concurrent writes to one ledger are serialized: no row is lost and a REJECTED row is not replaced', async () => {
+    const { root } = await makeProject();
+    const [a, b, c] = await Promise.all([
+      writeLedgerChanges(root, 'project', { relations: [rel('note:x', 'REJECTED', 0)] }),
+      writeLedgerChanges(root, 'project', { relations: [rel('note:x', 'INFERRED', 0.8)] }),
+      writeLedgerChanges(root, 'project', { relations: [rel('note:y', 'INFERRED', 0.8)] }),
+    ]);
+    expect([a.rejected, b.rejected, c.rejected]).toEqual([[], [{ field: 'relations', index: 0, reason: 'previously_rejected' }], []]);
+    const text = await readFile(join(root, a.path), 'utf8');
+    expect(text).toContain('| decision:0001 | uses | note:x | REJECTED | 0 |');
+    expect(text).toContain('| decision:0001 | uses | note:y | INFERRED | 0.8 |');
+  });
+});

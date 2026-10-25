@@ -100,3 +100,15 @@ describe('graph: relations', () => {
     expect(retired.changes.get('001-a')?.relations?.map((r) => [r.confidence, r.score])).toEqual([['REJECTED', 0]]);
   });
 });
+
+describe('graph: relations, REJECTED is never overwritten', () => {
+  it('FR-014: a non-REJECTED item whose triple is REJECTED in the same call is refused as previously_rejected, in either order', () => {
+    const rel = (confidence: 'INFERRED' | 'REJECTED', score: number) => ({ source: req.id, relation: 'rationale_for', target: dec.id, confidence, score });
+    const later = prepareSave(graphWith(), { relations: [rel('REJECTED', 0), rel('INFERRED', 0.9)] }, TODAY);
+    expect(later.rejected).toEqual([{ field: 'relations', index: 1, reason: 'previously_rejected' }]);
+    expect(later.changes.get('001-a')?.relations?.map((r) => r.confidence)).toEqual(['REJECTED']);
+    const earlier = prepareSave(graphWith(), { relations: [rel('INFERRED', 0.9), rel('REJECTED', 0)] }, TODAY);
+    expect(earlier.rejected).toEqual([{ field: 'relations', index: 0, reason: 'previously_rejected' }]);
+    expect(earlier.changes.get('001-a')?.relations?.map((r) => r.confidence)).toEqual(['REJECTED']);
+  });
+});

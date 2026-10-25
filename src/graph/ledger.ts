@@ -39,6 +39,8 @@ function splitRow(line: string): string[] {
   return cells;
 }
 
+const cmpKeys = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 const keyOf = (name: TableName, cells: string[]): string =>
   (name === 'relations' ? cells.slice(0, 3) : cells.slice(0, 1)).map(unescapeCell).join('\u0000');
 
@@ -120,7 +122,7 @@ export function applyLedgerChanges(raw: string | undefined, scope: string, chang
 
   for (const name of NAMES) {
     const incoming = ((changes[name] ?? []) as Array<Record<string, unknown>>)
-      .map((r) => rowCells(name, r)).sort((x, y) => (keyOf(name, x) < keyOf(name, y) ? -1 : 1));
+      .map((r) => rowCells(name, r)).sort((x, y) => cmpKeys(keyOf(name, x), keyOf(name, y)));
     for (const cells of incoming) {
       const key = keyOf(name, cells);
       let sec = sections(lines).get(name);

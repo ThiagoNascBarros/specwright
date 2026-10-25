@@ -6,10 +6,11 @@ import { MEMORY_DIR } from '../memory/repository.js';
 import { createExclusive, listMarkdown, listMarkdownTree, readTextIfExists, writeAtomic } from '../storage/files.js';
 import { withLock } from '../storage/lock.js';
 import { ALLOWED_TOP_LEVEL, resolveInside, resolveWithin } from '../storage/paths.js';
-import { applyLedgerChanges, ledgerPath } from './ledger.js';
+import { tripleKey } from './build.js';
+import { applyLedgerChanges, ledgerPath, parseLedger } from './ledger.js';
 import type { LedgerChanges } from './ledger.js';
 import { EXTRACTOR_VERSION, GRAPH_DIR, RELATIONS_DIR, SNAPSHOT_SCHEMA } from './types.js';
-import type { FileFacts, SourceFile, SourceKind } from './types.js';
+import type { FileFacts, Relation, SourceFile, SourceKind } from './types.js';
 
 export type Snapshot = { schema: number; extractor: number; files: Record<string, { size: number; mtimeMs: number; facts: FileFacts }> };
 
@@ -88,8 +89,13 @@ export async function ensureGraphDir(root: string): Promise<void> {
 
 let ledgerQueue: Promise<unknown> = Promise.resolve();
 
-/** Merges changes into a scope's ledger under the directory lock; writes only when the text changed (plan.md "Ledger format"). */
-export function writeLedgerChanges(root: string, scope: string, changes: LedgerChanges): Promise<{ path: string; written: boolean; stats: ReturnType<typeof applyLedgerChanges>['stats'] }> {
+/**
+ * Merges changes into a scope's ledger under the directory lock; writes only when the text changed (plan.md "Ledger format").
+ * A non-REJECTED upsert whose triple is REJECTED in the file is dropped and reported (FR-014); `index` points into `changes.relations`.
+ */
+export function writeLedgerChanges(root: string, scope: string, changes: LedgerChanges): Promise<{
+  path: string; written: boolean; stats: ReturnType<typeof applyLedgerChanges>['stats']; rejected: Array<{ field: 'relations'; index: number; reason: 'previously_rejected' }>;
+}> {
   const run = ledgerQueue.then(async () => {
     const dir = await resolveInside(root, RELATIONS_DIR);
     await mkdir(dir, { recursive: true });
@@ -97,10 +103,19 @@ export function writeLedgerChanges(root: string, scope: string, changes: LedgerC
     const file = await resolveInside(root, path);
     return withLock(`${dir}/.lock`, async () => {
       const raw = await readTextIfExists(file);
-      const { text, stats } = applyLedgerChanges(raw, scope, changes);
+      const retired = new Set((raw === undefined ? [] : parseLedger(path, raw).relations)
+        .filter((r) => r.confidence === 'REJECTED')
+        .map((r) => tripleKey({ source: r.source, relation: r.relation as Relation, target: r.target })));
+      const rejected: Array<{ field: 'relations'; index: number; reason: 'previously_rejected' }> = [];
+      const kept = (changes.relations ?? []).filter((r, index) => {
+        const refused = r.confidence !== 'REJECTED' && retired.has(tripleKey({ source: r.source, relation: r.relation as Relation, target: r.target }));
+        if (refused) rejected.push({ field: 'relations', index, reason: 'previously_rejected' });
+        return !refused;
+      });
+      const { text, stats } = applyLedgerChanges(raw, scope, { ...changes, relations: kept });
       const written = text !== raw;
       if (written) await writeAtomic(file, text);
-      return { path, written, stats };
+      return { path, written, stats, rejected };
     });
   });
   ledgerQueue = run.catch(() => undefined);
