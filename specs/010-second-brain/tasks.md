@@ -271,13 +271,13 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Node ids and sources" and § "Edge derivation".
 
-- [ ] T015 [P] Write failing tests (raw strings built inline, or read from the brain fixture):
+- [X] T015 [P] Write failing tests (raw strings built inline, or read from the brain fixture):
   - `FR-002: spec.md yields feature, artifact, requirement, criterion and story nodes with lines and sections`;
   - `FR-003: tasks.md T005 [US2] yields task node done=false, contains + implements edges, mention FR-002 owned by the task, path src/albums/sort.ts owned by the task`;
   - `FR-003: lines in fences and comments yield nothing`;
   - `FR-003: the owner of an FR item line is the requirement; of other lines, the artifact`;
   - `FR-013: tasks.md has no units; spec.md has one per section`.
-- [ ] T016 Implement.
+- [X] T016 Implement.
 - Verify: `npx vitest run tests/unit/graph-facts-feature.test.ts`.
 - Commit: `feat(graph): derive nodes and raw edges from feature artifacts` + `Refs: SW-10`
 
