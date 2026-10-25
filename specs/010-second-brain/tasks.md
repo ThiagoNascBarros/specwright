@@ -493,14 +493,14 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Tool contracts" (the node-reference paragraph) and § "Query algorithm" (search).
 
-- [ ] T030 [P] [US1] Write failing tests:
+- [X] T030 [P] [US1] Write failing tests:
   - `FR-012: resolves exact ids, 001-photo-albums/FR-002, FR-002 with feature, 0002, keep-ids-stable, specs/001-photo-albums/spec.md and an exact label`;
   - `US1-AS5: a label shared by two nodes → NODE_AMBIGUOUS listing both ids; an unknown label → NODE_NOT_FOUND with suggestions`;
   - `FR-009: "album sorting" scores FR-002 and T005 highest`;
   - `FR-009: an id in the question scores 1000`;
   - `FR-009: with feature, seeds come from that feature`;
   - `FR-009: the second seed must score at least half the first`.
-- [ ] T031 [US1] Implement both files.
+- [X] T031 [US1] Implement both files.
 - Verify: `npx vitest run tests/unit/graph-node-ref.test.ts tests/unit/graph-search.test.ts`.
 - Commit: `feat(graph): resolve node references and score nodes for a question` + `Refs: SW-10`
 
