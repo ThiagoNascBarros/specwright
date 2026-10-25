@@ -1,4 +1,5 @@
 import type { Config } from '../config.js';
+import { mapLimit, READ_CONCURRENCY } from '../storage/concurrency.js';
 import { buildGraph } from './build.js';
 import { detectCommunities } from './community.js';
 import type { Communities } from './community.js';
@@ -33,17 +34,16 @@ async function refresh(config: Config, state: CacheState): Promise<Graph> {
     if (snap) for (const [path, e] of Object.entries(snap.files)) state.facts.set(path, e);
   }
   const sources = await discoverSources(root, include);
-  const next = new Map<string, Entry>();
   let parsed = 0;
-  for (const src of sources) {
+  // Changed files are read concurrently; `next` keeps the discovery order.
+  const entries = await mapLimit(sources, READ_CONCURRENCY, async (src): Promise<Entry> => {
     const old = reuse ? state.facts.get(src.path) : undefined;
     // shortcut: a same-size edit within mtime granularity is missed, upgrade to a content hash if stale facts are ever seen
-    if (old && old.size === src.size && old.mtimeMs === src.mtimeMs) next.set(src.path, old);
-    else {
-      next.set(src.path, { size: src.size, mtimeMs: src.mtimeMs, facts: factsOf(src, await readSource(root, src.path, include)) });
-      parsed++;
-    }
-  }
+    if (old && old.size === src.size && old.mtimeMs === src.mtimeMs) return old;
+    parsed++;
+    return { size: src.size, mtimeMs: src.mtimeMs, facts: factsOf(src, await readSource(root, src.path, include)) };
+  });
+  const next = new Map(sources.map((src, i) => [src.path, entries[i]]));
   const changed = parsed > 0 || next.size !== state.facts.size || [...state.facts.keys()].some((p) => !next.has(p));
   state.facts = reuse ? next : new Map();
   state.stats = { parsed, reused: next.size - parsed };
