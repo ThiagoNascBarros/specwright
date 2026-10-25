@@ -979,10 +979,10 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Governance updates", § "Server instructions" and § "CLI".
 
-- [ ] T069 [P] Amend `.specify/memory/constitution.md` to v2.0.0, with the exact text of plan.md § "Governance updates", and set the footer date to the commit date.
-- [ ] T070 [P] Update `docs/01-prd.md` as listed in plan.md § "Governance updates": N4, NFR-2, NFR-3, NFR-6, NFR-7, new FR-12 to FR-19, §7, §8 and §12.
-- [ ] T071 [P] Update `docs/02-trd.md` (§1, §2, §3, §5, §7, §8, §10, §13) and `docs/03-roadmap.md` (Phase 5 row; remove the "cache for very large projects" item from "Next").
-- [ ] T072 [P] Update `README.md`:
+- [X] T069 [P] Amend `.specify/memory/constitution.md` to v2.0.0, with the exact text of plan.md § "Governance updates", and set the footer date to the commit date.
+- [X] T070 [P] Update `docs/01-prd.md` as listed in plan.md § "Governance updates": N4, NFR-2, NFR-3, NFR-6, NFR-7, new FR-12 to FR-19, §7, §8 and §12.
+- [X] T071 [P] Update `docs/02-trd.md` (§1, §2, §3, §5, §7, §8, §10, §13) and `docs/03-roadmap.md` (Phase 5 row; remove the "cache for very large projects" item from "Next").
+- [X] T072 [P] Update `README.md`:
   - the tools table (18);
   - a "Second brain" section: MCP usage, CLI, report on GitHub, Obsidian vault, `graph.include`, `graph.vaultDir`, and how to check that Obsidian shows a vault at a hidden path;
   - an "Agent instructions" snippet for `AGENTS.md`/`CLAUDE.md` (the SERVER_INSTRUCTIONS text under `## Specwright`);
@@ -997,7 +997,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
     Or `node` with the built path when installed from source; match the README's existing install method.
 
   Also update `CONTRIBUTING.md` (remove the 10-tool limit and add the budgets) and `CLAUDE.md` ("18 tools", "four roadmap phases plus the second brain", the structure list with `src/graph/` and `src/cli/`). Create `AGENTS.md` with the same working rules as `CLAUDE.md` plus the snippet, kept under 4 KB.
-- [ ] T073 [P] Add a `CHANGELOG.md` 0.3.0 entry (Added: the 8 tools, CLI, exports, config; Changed: annotations, pack_context `graph`, constitution 2.0.0). Bump `package.json` to `0.3.0` and mention the knowledge graph in its description.
+- [X] T073 [P] Add a `CHANGELOG.md` 0.3.0 entry (Added: the 8 tools, CLI, exports, config; Changed: annotations, pack_context `graph`, constitution 2.0.0). Bump `package.json` to `0.3.0` and mention the knowledge graph in its description.
 - Verify: `npm test` is green (the contract test reads the version from package.json); every relative link in the edited docs resolves (`lint_memory` with `graph.include: ["docs"]` on a copy reports 0 `broken_link`).
 - Commit: `docs: document the second brain and amend the constitution to 2.0.0` + `Refs: SW-10`
 
