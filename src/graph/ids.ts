@@ -1,3 +1,4 @@
+import { FEATURE_ID_SOURCE, ITEM_ID_SOURCE } from '../storage/text.js';
 import { slugify } from '../storage/slug.js';
 import { NODE_KINDS, type GraphNode, type NodeKind } from './types.js';
 
@@ -35,4 +36,29 @@ export function scopeOfNode(node: Pick<GraphNode, 'feature'>): string {
 
 export function conceptIdFor(label: string): string {
   return `concept:${slugify(label, 64) || 'concept'}`;
+}
+
+const DECISION_REF = /^\d{4}$/;
+const SLUG_REF = /^[a-z0-9-]+$/;
+const QUALIFIED_REF = new RegExp(`^(${FEATURE_ID_SOURCE})/(${ITEM_ID_SOURCE})$`, 'u');
+const BARE_REF = new RegExp(`^${ITEM_ID_SOURCE}$`, 'u');
+
+function itemId(feature: string, item: string): string {
+  if (item.startsWith('FR')) return nodeId.requirement(feature, item);
+  if (item.startsWith('SC')) return nodeId.criterion(feature, item);
+  if (item.startsWith('US')) return nodeId.story(feature, item);
+  return nodeId.task(feature, item);
+}
+
+/**
+ * Ids a reference can name without labels, most specific first: `<feature>/<item>`, a bare item with
+ * `feature`, `NNNN` (decision), then a slug (note, then feature). Pure: the caller checks existence.
+ */
+export function refIdCandidates(ref: string, feature?: string): string[] {
+  const qualified = QUALIFIED_REF.exec(ref);
+  if (qualified) return [itemId(qualified[1], qualified[2])];
+  if (feature !== undefined && BARE_REF.test(ref)) return [itemId(feature, ref)];
+  if (DECISION_REF.test(ref)) return [nodeId.decision(ref)];
+  if (SLUG_REF.test(ref)) return [nodeId.note(ref), nodeId.feature(ref)];
+  return [];
 }
