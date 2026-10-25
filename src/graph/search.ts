@@ -1,7 +1,6 @@
 import { tokenize } from '../storage/text.js';
-import { degree } from './graph.js';
+import { degree, pathNodes } from './graph.js';
 import { refIdCandidates } from './ids.js';
-import { pathNodes } from './node-ref.js';
 import type { Graph } from './types.js';
 
 export type Scored = { id: string; score: number };

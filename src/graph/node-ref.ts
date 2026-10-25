@@ -1,4 +1,5 @@
 import { SpecwrightError } from '../errors.js';
+import { pathNodes } from './graph.js';
 import { refIdCandidates } from './ids.js';
 import { scoreNodes } from './search.js';
 import type { Graph, GraphNode } from './types.js';
@@ -30,11 +31,6 @@ export function resolveNodeRef(graph: Graph, ref: string, feature: string | unde
     `No node matches "${ref}".`,
     closest.length ? `Closest: ${closest.join(', ')}` : 'Call query_graph to search.',
   );
-}
-
-/** Nodes that name a source file: its line-1 node, except a spec's feature node (shared with search.ts). */
-export function pathNodes(graph: Graph, path: string): GraphNode[] {
-  return matching(graph, (n) => n.path === path && n.kind !== 'feature' && n.line === 1);
 }
 
 function matching(graph: Graph, keep: (node: GraphNode) => boolean): GraphNode[] {

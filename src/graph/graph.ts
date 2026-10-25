@@ -1,4 +1,4 @@
-import type { Confidence, Graph, GraphEdge, Relation } from './types.js';
+import type { Confidence, Graph, GraphEdge, GraphNode, Relation } from './types.js';
 
 export type EdgeTuple = [string, string, string] | [string, string, string, Confidence, number];
 export interface Incident { index: number; edge: GraphEdge; other: string; direction: 'out' | 'in' }
@@ -23,4 +23,9 @@ export function degree(graph: Graph, id: string, opts: { ignore?: readonly Relat
 /** Compact edge: EXTRACTED edges omit confidence and score. */
 export function edgeTuple(edge: GraphEdge): EdgeTuple {
   return edge.confidence === 'EXTRACTED' ? [edge.source, edge.relation, edge.target] : [edge.source, edge.relation, edge.target, edge.confidence, edge.score];
+}
+
+/** Nodes that name a source file: its line-1 node, except a spec's feature node (shared by node-ref.ts and search.ts). */
+export function pathNodes(graph: Graph, path: string): GraphNode[] {
+  return [...graph.nodes.values()].filter((n) => n.path === path && n.kind !== 'feature' && n.line === 1);
 }
