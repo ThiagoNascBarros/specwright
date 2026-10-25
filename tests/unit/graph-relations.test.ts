@@ -111,4 +111,22 @@ describe('graph: relations, REJECTED is never overwritten', () => {
     expect(earlier.rejected).toEqual([{ field: 'relations', index: 0, reason: 'previously_rejected' }]);
     expect(earlier.changes.get('001-a')?.relations?.map((r) => r.confidence)).toEqual(['REJECTED']);
   });
+
+  it('FR-015: origins maps each scope\'s ledger rows back to the caller input index, across two scopes', () => {
+    const input: SaveInput = {
+      concepts: [{ id: 'concept:alpha', label: 'Alpha' }],
+      relations: [
+        { source: req.id, relation: 'tests', target: dec.id, confidence: 'INFERRED', score: 0.9 },
+        { source: 'concept:alpha', relation: 'uses', target: dec.id, confidence: 'INFERRED', score: 0.9 },
+        { source: 'requirement:001-a/FR-999', relation: 'uses', target: dec.id, confidence: 'INFERRED', score: 0.9 },
+        { source: req.id, relation: 'refines', target: dec.id, confidence: 'AMBIGUOUS', score: 0.2 },
+      ],
+    };
+    const { changes, origins } = prepareSave(graphWith(), input, TODAY);
+    expect(origins.get('001-a')).toEqual([0, 3]);
+    expect(origins.get('project')).toEqual([1]);
+    // A ledger rejection at changes.relations[1] of scope 001-a (the row written from input 3) maps back to input 3.
+    expect(changes.get('001-a')!.relations![1].relation).toBe('refines');
+    expect(origins.get('001-a')![1]).toBe(3);
+  });
 });

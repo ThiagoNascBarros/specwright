@@ -53,32 +53,20 @@ export async function runExtractionBatch(config: Config, _deps: Deps, args: z.in
     if (content !== undefined) found.push({ unit, item: { unit: unit.id, node: unit.node, title: unit.title, hash: contentHash(content), content } });
   }
 
-  // Greedy in request order: an item is kept when the response still fits with no candidates; the ids not kept are deferred.
+  // Fitting (plan.md "Tool contracts"): a unit that cannot fit on its own is deferred first (Review Focus 5); then candidates
+  // are dropped from the end, then kept items from the end, so the kept items are a request-order prefix of the rest.
   const max = config.maxResponseChars;
-  const shell = (items: Item[], candidates: Array<[string, string]>, kept: Set<string>) => {
-    const deferred = requested.filter((id) => !kept.has(id));
-    return { version: EXTRACTOR_VERSION, instructions: EXTRACTION_INSTRUCTIONS, items, candidates, deferred };
+  const shell = (items: Item[], candidates: Array<[string, string]>): Record<string, unknown> => {
+    const kept = new Set(items.map((i) => i.unit));
+    return { version: EXTRACTOR_VERSION, instructions: EXTRACTION_INSTRUCTIONS, items, candidates, deferred: requested.filter((id) => !kept.has(id)) };
   };
   const fits = (value: unknown): boolean => JSON.stringify(value).length <= max;
-  const items: Item[] = [];
-  const keptIds = new Set<string>();
-  for (const { unit, item } of found) {
-    const trial = new Set([...keptIds, unit.id]);
-    if (fits(shell([...items, item], [], trial))) {
-      items.push(item);
-      keptIds.add(unit.id);
-    }
-  }
+  const items = found.filter(({ item }) => fits(shell([item], []))).map(({ item }) => item);
+  const candidates = candidatesFor(graph, items.map((i) => graph.units.get(i.unit)!));
+  while (candidates.length > 0 && !fits(shell(items, candidates))) candidates.pop();
+  while (items.length > 0 && !fits(shell(items, candidates))) items.pop();
 
-  const keptUnits = items.map((i) => graph.units.get(i.unit)!);
-  const all = candidatesFor(graph, keptUnits);
-  const candidates: Array<[string, string]> = [];
-  for (const c of all) {
-    if (!fits(shell(items, [...candidates, c], keptIds))) break;
-    candidates.push(c);
-  }
-
-  const out: Record<string, unknown> = shell(items, candidates, keptIds);
+  const out = shell(items, candidates);
   if ((out.deferred as string[]).length === 0) delete out.deferred;
   return out;
 }

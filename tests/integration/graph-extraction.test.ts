@@ -3,6 +3,8 @@ import { readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { copyFixture, connect } from '../helpers.js';
 import { resetGraphCache } from '../../src/graph/service.js';
+import { EXTRACTION_INSTRUCTIONS } from '../../src/graph/instructions.js';
+import { EXTRACTOR_VERSION } from '../../src/graph/types.js';
 
 afterEach(() => resetGraphCache());
 
@@ -186,5 +188,59 @@ describe('extraction_batch', () => {
     expect(data.deferred).toEqual([huge]);
     expect(data.items.map((i: { unit: string }) => i.unit)).toEqual([small]);
     expect(data.items[0].content.length).toBeGreaterThan(0);
+  });
+
+  it('plan fitting stage 1: a response limit just below the full fetch drops candidates from the end and keeps every item', async () => {
+    const { root } = await copyFixture('brain');
+    const [unit] = await pendingIds((await connect(root)).call);
+    const full = await (await connect(root)).call('extraction_batch', { units: [unit] });
+    const max = full.text.length - 300;
+    const limited = await (await connect(root, { maxResponseChars: max })).call('extraction_batch', { units: [unit] });
+    expect(limited.isError).toBe(false);
+    expect(limited.data.items.map((i: { unit: string }) => i.unit)).toEqual([unit]);
+    expect(limited.data.deferred).toBeUndefined();
+    expect(limited.data.candidates.length).toBeLessThan(full.data.candidates.length);
+    expect(limited.data.candidates).toEqual(full.data.candidates.slice(0, limited.data.candidates.length));
+    expect(limited.text.length).toBeLessThanOrEqual(max);
+  });
+
+  it('plan fitting stage 2: when items no longer fit together, the last ones move to deferred and kept items stay a request-order prefix', async () => {
+    const { root } = await copyFixture('brain');
+    const ids = await pendingIds((await connect(root)).call);
+    const { call } = await connect(root);
+    // Three units: A fits alone, B fits alone but not with A, C is small enough to fit with A.
+    const fetched = await Promise.all(ids.slice(0, 3).map(async (id) => (await call('extraction_batch', { units: [id] })).data.items[0]));
+    const bySize = [...fetched].sort((x, y) => x.content.length - y.content.length);
+    const [c, a, b] = bySize; // b is the largest
+    const size = (items: unknown[], deferred: string[]) => JSON.stringify({ version: EXTRACTOR_VERSION, instructions: EXTRACTION_INSTRUCTIONS, items, candidates: [], deferred }).length;
+    const max = size([a, c], [b.unit]);
+    expect(size([b], [a.unit, c.unit])).toBeLessThanOrEqual(max); // B fits alone
+    expect(size([a, b], [c.unit])).toBeGreaterThan(max);          // A and B do not fit together
+    const limited = await (await connect(root, { maxResponseChars: max })).call('extraction_batch', { units: [a.unit, b.unit, c.unit] });
+    expect(limited.data.items.map((i: { unit: string }) => i.unit)).toEqual([a.unit]);
+    expect(limited.data.deferred).toEqual([b.unit, c.unit]);
+  });
+
+  describe('save_relations runtime bounds', () => {
+    const rel = { source: 'concept:album-ordering', relation: 'refines', target: ALBUM_FR, confidence: 'INFERRED', score: 0.8 };
+    const cases: Array<[string, Record<string, unknown>]> = [
+      ['an empty save', {}],
+      ['relations over 200', { relations: Array.from({ length: 201 }, () => rel) }],
+      ['concepts over 50', { concepts: Array.from({ length: 51 }, (_, i) => ({ id: `concept:c${i}`, label: 'C' })) }],
+      ['covered over 100', { covered: Array.from({ length: 101 }, (_, i) => ({ unit: `u${i}`, hash: 'h' })) }],
+      ['evidence over 200 characters', { relations: [{ ...rel, evidence: 'e'.repeat(201) }] }],
+      ['a label of 0 characters', { concepts: [{ id: 'concept:x', label: '' }] }],
+      ['a label over 120 characters', { concepts: [{ id: 'concept:x', label: 'l'.repeat(121) }] }],
+      ['a summary over 300 characters', { concepts: [{ id: 'concept:x', label: 'X', summary: 's'.repeat(301) }] }],
+    ];
+    for (const [name, args] of cases) {
+      it(`save_relations: ${name} returns INVALID_INPUT`, async () => {
+        const { root } = await copyFixture('brain');
+        const { call } = await connect(root);
+        const { isError, data } = await call('save_relations', args);
+        expect(isError).toBe(true);
+        expect(data.code).toBe('INVALID_INPUT');
+      });
+    }
   });
 });
