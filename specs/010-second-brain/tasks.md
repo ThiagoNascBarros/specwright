@@ -603,13 +603,13 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - `candidatesFor(graph: Graph, units: Unit[], max = 60): Array<[string, string]>`
 - `EXTRACTION_INSTRUCTIONS` and `SERVER_INSTRUCTIONS`, verbatim from plan.md § "Extraction instructions" and § "Server instructions".
 
-- [ ] T038 [P] [US2] Write failing tests:
+- [X] T038 [P] [US2] Write failing tests:
   - `US2-AS1: with no coverage every unit is pending, batches stay within budget, sorted by scope then path, and the scope changes start a new batch`;
   - `Review Focus 5: a unit larger than the budget gets its own batch`;
   - `SC-002: a coverage row with the current hash and version makes a unit not pending; an older version makes it pending`;
   - `FR-013: candidatesFor lists same-scope nodes in kind order, then concepts, then principles, capped at 60 with labels ≤ 60 chars`;
   - `FR-023: SERVER_INSTRUCTIONS ≤ 1,200 chars and EXTRACTION_INSTRUCTIONS ≤ 1,600 chars`.
-- [ ] T039 [US2] Implement.
+- [X] T039 [US2] Implement.
 - Verify: `npx vitest run tests/unit/graph-extraction.test.ts`.
 - Commit: `feat(graph): plan extraction batches from uncovered units` + `Refs: SW-10`
 
