@@ -3,12 +3,16 @@ import { contentHash } from '../storage/hash.js';
 import { tokensOf } from './budget.js';
 import type { Unit } from './types.js';
 
+/** A line holding only comments: the comment body may not contain `-->`, so it cannot run past its own line. */
+const WHOLE_LINE_COMMENT = /^[ \t]*<!--(?:(?!-->)[\s\S])*-->[ \t]*(?:\n|$)/gm;
+
 interface Piece { id: string; section?: string; heading?: string; content: string }
 
 /** Splits a source into hashable pieces: one per non-empty `##` section, or the whole body when there is none. */
 function piecesOf(path: string, raw: string): Piece[] {
-  // Comment-only lines go whole, so a comment leaves no blank line behind to change the hash.
-  const { body, sections } = parseDocument(stripComments(raw.replace(/^[ \t]*<!--[\s\S]*?-->[ \t]*\n/gm, '')));
+  // Whole-line comments go first, so a comment leaves no blank line behind to change the hash.
+  const lf = raw.replace(/\r\n?/g, '\n');
+  const { body, sections } = parseDocument(stripComments(lf.replace(WHOLE_LINE_COMMENT, '')));
   if (sections.length === 0) {
     const content = body.replace(/\n+$/, '');
     return content.trim() === '' ? [] : [{ id: path, content }];

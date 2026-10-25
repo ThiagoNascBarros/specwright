@@ -41,6 +41,25 @@ describe('graph: extraction units', () => {
     expect(unitsOf(input(commented))[0].hash).toBe(unitsOf(input(plain))[0].hash);
   });
 
+  it('FR-013: a comment sharing a line with text is not removed', () => {
+    const raw = '## Goals\n<!-- x --> keep me\nmore\n## Scope\n<!-- y -->\nend\n';
+    const goals = unitsOf(input(raw))[0];
+    expect(unitContent(raw, goals)).toContain('keep me');
+    expect(unitContent(raw, goals)).toContain('more');
+  });
+
+  it('FR-013: CRLF and LF sources hash the same', () => {
+    const lf = '## Goals\nAlpha.\n<!-- c -->\n';
+    const crlf = lf.replace(/\n/g, '\r\n');
+    expect(unitsOf(input(crlf))[0].hash).toBe(unitsOf(input(lf))[0].hash);
+  });
+
+  it('FR-013: a comment-only last line without a newline is removed', () => {
+    const plain = '## Goals\nAlpha.\n';
+    const trailing = '## Goals\nAlpha.\n<!-- end -->';
+    expect(unitsOf(input(trailing))[0].hash).toBe(unitsOf(input(plain))[0].hash);
+  });
+
   it('SC-002: editing one section changes only that unit\'s hash', () => {
     const before = '## Goals\nAlpha.\n\n## Scope\nBeta.\n';
     const after = '## Goals\nAlpha edited.\n\n## Scope\nBeta.\n';
