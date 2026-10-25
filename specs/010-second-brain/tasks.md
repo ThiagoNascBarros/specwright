@@ -191,12 +191,12 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Data model" and § "Node ids and sources".
 
-- [ ] T009 [P] Write failing tests in `tests/unit/graph-ids.test.ts`:
+- [X] T009 [P] Write failing tests in `tests/unit/graph-ids.test.ts`:
   - `FR-002: builds and parses every id kind`, round-tripping `requirement:006-memory/FR-003` and `artifact:001-x/contract/api`;
   - `FR-002: parseNodeId rejects unknown kinds and empty keys`;
   - `FR-015: scopeOfNode is the feature, or "project"`;
   - `FR-014: conceptIdFor("Decisão de cache 🚀") === "concept:decisao-de-cache"` (Review Focus 2).
-- [ ] T010 Implement `types.ts` (verbatim from the plan) and `ids.ts`.
+- [X] T010 Implement `types.ts` (verbatim from the plan) and `ids.ts`.
 - Verify: `npx vitest run tests/unit/graph-ids.test.ts`.
 - Commit: `feat(graph): add graph entities and typed node ids` + `Refs: SW-10`
 
