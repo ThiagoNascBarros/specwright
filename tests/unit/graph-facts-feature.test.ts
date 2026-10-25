@@ -47,6 +47,7 @@ describe('graph: facts of feature artifacts', () => {
 
   it('FR-003: lines in fences and comments yield nothing', () => {
     const r = spec();
+    expect(r.mentions.some((m) => m.id === 'FR-002')).toBe(true);
     expect(r.mentions.some((m) => m.id === 'FR-009' || m.id === 'FR-008')).toBe(false);
     expect(r.nodes.some((x) => x.id.endsWith('FR-008'))).toBe(false);
   });
@@ -66,6 +67,7 @@ describe('graph: facts of feature artifacts', () => {
   });
 
   it('FR-003: link targets are not mentions', () => {
+    expect(spec().mentions.some((m) => m.id === 'FR-002' && m.line === 6)).toBe(true);
     expect(spec().mentions.some((m) => m.type === 'feature')).toBe(false);
   });
 });
