@@ -82,6 +82,9 @@ export function buildGraph(input: FileFacts[], version = 1): Graph {
     return false;
   });
 
+  // Per-file issues (duplicate ids, malformed entries) are reported as invalid rows.
+  for (const f of facts) for (const i of f.issues) diag('invalid_row', f.path, i.line, i.message, 'Fix or remove the entry it names.');
+
   // 5. Ledgers.
   const rejected = new Set<string>();
   const coverage = new Map<string, CoverageRow>();

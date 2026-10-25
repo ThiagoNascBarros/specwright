@@ -7,6 +7,7 @@ import { registerQueryGraph } from './tools/query-graph.js';
 import { registerExtractionBatch } from './tools/extraction-batch.js';
 import { registerSaveRelations } from './tools/save-relations.js';
 import { registerGraphReport } from './tools/graph-report.js';
+import { registerLintMemory } from './tools/lint-memory.js';
 
 /** Registers the tools of the graph module. */
 export function register(server: McpServer, config: Config, deps: Deps) {
@@ -16,4 +17,5 @@ export function register(server: McpServer, config: Config, deps: Deps) {
   registerExtractionBatch(server, config, deps);
   registerSaveRelations(server, config, deps);
   registerGraphReport(server, config, deps);
+  registerLintMemory(server, config, deps);
 }
