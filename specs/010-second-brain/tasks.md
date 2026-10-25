@@ -892,13 +892,13 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "CLI".
 
-- [ ] T061 [P] [US7] Write failing tests:
+- [X] T061 [P] [US7] Write failing tests:
   - unit `FR-022: parses every command and option of the CLI table; an unknown option or a missing argument → usage`;
   - contract (spawn `node dist/index.js graph …` with `execFile`, `cwd` = the fixture copy):
     - `US7-AS1: graph query "album sorting" --feature 001-photo-albums prints the same JSON text as query_graph and exits 0; an ambiguous node exits 3; an unknown one exits 4`;
     - `US7-AS2: graph lint exits 1 with a broken link and 0 without`;
     - `FR-022: no subcommand still serves MCP over stdio` (the existing contract tests cover it; assert that `graph` with no command exits 2).
-- [ ] T062 [US7] Implement `args.ts`, `graph.ts` and the dispatch in `src/index.ts` (`process.argv[2] === 'graph'`; exit with the returned code).
+- [X] T062 [US7] Implement `args.ts`, `graph.ts` and the dispatch in `src/index.ts` (`process.argv[2] === 'graph'`; exit with the returned code).
 - Verify: `npm test` is green.
 - Commit: `feat(cli): add the graph subcommand` + `Refs: SW-10`
 
