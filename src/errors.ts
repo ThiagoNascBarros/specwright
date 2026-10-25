@@ -8,6 +8,8 @@ export type ErrorCode =
   | 'INVALID_DIFF'
   | 'INVALID_INPUT'
   | 'PATH_OUTSIDE_ROOT'
+  | 'NODE_NOT_FOUND'
+  | 'NODE_AMBIGUOUS'
   | 'INTERNAL';
 
 export class SpecwrightError extends Error {

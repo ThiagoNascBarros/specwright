@@ -4,11 +4,11 @@ import type { Item, Specification, UserStory } from './types.js';
 const TITLE = /^#\s+Feature Specification:\s*(.+?)\s*$/;
 const META = /^\*\*(Feature Branch|Created|Status|Input)\*\*:\s*(.*?)\s*$/;
 // Dash variants and a trailing suffix ("🎯 MVP") are common in agent-written specs.
-const STORY = /^###\s+User Story\s+(\d+)\s*[-–—:]\s*(.+?)\s*\(Priority:\s*(P\d+)\)/;
+export const STORY_LINE = /^###\s+User Story\s+(\d+)\s*[-–—:]\s*(.+?)\s*\(Priority:\s*(P\d+)\)/;
 const STORY_LIKE = /^###\s+User Story\b/;
 const SCENARIO = /^\s*\d+\.\s+(.*\*\*Given\*\*.*)$/;
 // Accepts both `**FR-001**: text` and `**FR-001:** text`.
-const ITEM = /^\s*[-*]\s+\*\*((?:FR|SC)-\d{3,}):?\*\*:?\s*(.+?)\s*$/;
+export const ITEM_LINE = /^\s*[-*]\s+\*\*((?:FR|SC)-\d{3,}):?\*\*:?\s*(.+?)\s*$/;
 const ITEM_LIKE = /^\s*[-*]\s+\**(?:FR|SC)-\d+/;
 const CLARIFICATION = /\[NEEDS CLARIFICATION:\s*([^\]]+?)\s*\]/g;
 const HEADING = /^#{1,6}\s/;
@@ -37,7 +37,7 @@ export function parseSpecification(raw: string): Specification {
     if (t && !title) title = t[1];
     const m = META.exec(line);
     if (m && meta[m[1]] === undefined) meta[m[1]] = m[2];
-    const s = STORY.exec(line);
+    const s = STORY_LINE.exec(line);
     if (!s && STORY_LIKE.test(line)) warnings.push(`user story heading not recognized: "${line.trim()}"`);
     if (s) {
       story = { number: Number(s[1]), title: s[2], priority: s[3], scenarios: [] };
@@ -47,7 +47,7 @@ export function parseSpecification(raw: string): Specification {
     if (HEADING.test(line)) story = undefined;
     const scenario = story && SCENARIO.exec(line);
     if (scenario) story!.scenarios.push(plain(scenario[1]));
-    const item = ITEM.exec(line);
+    const item = ITEM_LINE.exec(line);
     if (item) (item[1].startsWith('FR') ? requirements : successCriteria).push({ id: item[1], text: item[2] });
     else if (ITEM_LIKE.test(line)) warnings.push(`requirement line not recognized: "${line.trim()}"`);
   }
