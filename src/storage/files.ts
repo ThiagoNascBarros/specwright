@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
+const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 /** Writes via a temporary file in the same folder and a rename, so readers never see a partial file (NFR-5). */
 export async function writeAtomic(path: string, text: string): Promise<void> {
   const tmp = join(dirname(path), `.${basename(path)}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`);
@@ -76,5 +78,5 @@ export async function listMarkdownTree(dir: string): Promise<string[]> {
     if (e.isDirectory()) found.push(...(await listMarkdownTree(join(dir, e.name))).map((p) => `${e.name}/${p}`));
     else if (e.name.endsWith('.md') && (e.isFile() || e.isSymbolicLink())) found.push(e.name);
   }
-  return found.sort();
+  return found.sort(cmp);
 }

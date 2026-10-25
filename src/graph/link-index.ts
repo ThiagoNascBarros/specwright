@@ -1,5 +1,7 @@
 import { posix } from 'node:path';
 
+const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export type LinkResolution = { node: string } | { file: string } | { missing: true } | { ambiguous: string[] } | { ignore: true };
 export interface LinkIndex { byPath: Map<string, { path: string; node: string }>; entries: Array<{ path: string; node: string; lower: string }> }
 
@@ -11,7 +13,7 @@ export function buildLinkIndex(entries: Array<{ path: string; node: string }>): 
 }
 
 const pick = (hits: Array<{ path: string; node: string }>): LinkResolution | undefined =>
-  hits.length === 1 ? { node: hits[0].node } : hits.length > 1 ? { ambiguous: hits.map((h) => h.path).sort() } : undefined;
+  hits.length === 1 ? { node: hits[0].node } : hits.length > 1 ? { ambiguous: hits.map((h) => h.path).sort(cmp) } : undefined;
 
 /** Wikilink: exact path, then unique suffix, then unique basename; case-insensitive, `.md` optional. */
 export function resolveWiki(index: LinkIndex, target: string): LinkResolution {
