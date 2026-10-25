@@ -814,12 +814,12 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Modify: `src/graph/repository.ts` (`discoverSources` lists `listMarkdownTree(<root>/<dir>)` for each include, as kind `doc`, reading through `resolveWithin(root, path, [...ALLOWED_TOP_LEVEL, ...include])`)
 - Test: `tests/integration/graph-include.test.ts`
 
-- [ ] T055 [US6] Write failing tests:
+- [X] T055 [US6] Write failing tests:
   - `US6-AS1: with include ["docs"], get_node "docs/adr/0001-storage.md" is a doc node with links_to decision:0001`;
   - `US6-AS2: an included folder containing a symlink to a folder outside the root, a .git/ and node_modules/ reads none of them`; spy on `readSource` paths, or put a sentinel file whose content would create a node;
   - `US6-AS3: without include, no node has a path outside specs/ and .specify/`;
   - `Review Focus 4: include pointing at a symlink that leaves the root → PATH_OUTSIDE_ROOT on the first graph call, no node created`.
-- [ ] T056 [US6] Implement include discovery and reads.
+- [X] T056 [US6] Implement include discovery and reads.
 - Verify: `npm test` is green.
 - Commit: `feat(graph): read Markdown folders listed in graph.include` + `Refs: SW-10`
 
