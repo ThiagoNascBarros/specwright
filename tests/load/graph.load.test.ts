@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { copyFixture } from '../helpers.js';
+import { copyFixture, connect } from '../helpers.js';
+import { DEFAULT_GRAPH_CONFIG } from '../../src/config.js';
+import { speckitDataset } from '../perf/dataset.js';
 import { parseLedger } from '../../src/graph/ledger.js';
 import type { LedgerFacts } from '../../src/graph/types.js';
 import { startServer } from './stdio-client.js';
@@ -58,4 +60,17 @@ describe('load: graph ledger across processes', () => {
     expect(relations.filter((r) => r.source === 'note:sorting-pitfall')).toHaveLength(1);
     expect(relations).toHaveLength(fixtureRelations + 2 * PER_PROCESS);
   });
+});
+
+describe('load: graph scale', () => {
+  it('SC-003: 2,000 features + 5,000 notes cold build < 6 s without errors', async () => {
+    const { root } = await speckitDataset(2000, 5000, 0, { links: true });
+    const { call } = await connect(root, { maxResponseChars: 5_000_000, graph: { ...DEFAULT_GRAPH_CONFIG, cache: 'off' } });
+    const start = performance.now();
+    const { isError } = await call('query_graph', { question: 'retry timeout' });
+    const ms = performance.now() - start;
+    console.error(`[perf] cold build (2000 features + 5000 notes) query_graph=${ms.toFixed(1)}ms`);
+    expect(isError).toBe(false);
+    expect(ms).toBeLessThan(6000);
+  }, 300_000);
 });
