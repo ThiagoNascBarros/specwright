@@ -1,7 +1,10 @@
 import type { Section } from '../storage/markdown.js';
 
-/** `NNN-short-name` or `YYYYMMDD-HHMMSS-short-name`, as written by Spec Kit's create-new-feature script. */
-export const FEATURE_ID_PATTERN = /^(\d{3,}|\d{8}-\d{6})-[a-z0-9][a-z0-9-]*$/;
+/**
+ * `NNN-short-name` or `YYYYMMDD-HHMMSS-short-name`. Spec Kit keeps Unicode letters and agents keep
+ * acronyms (`004-add-JWT-auth`), so any letter or digit is allowed; `/`, `\\`, `.` and spaces never are.
+ */
+export const FEATURE_ID_PATTERN = /^(\d{3,}|\d{8}-\d{6})-[\p{L}\p{N}][\p{L}\p{N}_-]*$/u;
 export const TASK_ID_PATTERN = /^T\d{3,}$/;
 export const STORY_PATTERN = /^US\d+$/;
 
@@ -43,6 +46,8 @@ export interface Specification {
   assumptions: string[];
   /** Text of each unresolved `[NEEDS CLARIFICATION: …]` marker. */
   clarifications: string[];
+  /** Lines that look like a requirement or story but do not parse; reported so nothing is dropped silently. */
+  warnings: string[];
 }
 
 /** One `- [ ] T### [P] [USn] description` line of `tasks.md`. */

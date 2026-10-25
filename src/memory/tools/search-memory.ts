@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { Config } from '../../config.js';
-import { readConstitution } from '../../constitution/repository.js';
+import { readConstitutionIfSafe as readConstitution } from '../../constitution/repository.js';
 import { readDecisions } from '../../decisions/repository.js';
 import { SpecwrightError, tool } from '../../errors.js';
 import { tokenize } from '../../storage/text.js';

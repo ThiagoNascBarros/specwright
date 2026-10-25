@@ -1,4 +1,5 @@
-import { readConstitution } from '../constitution/repository.js';
+import { readConstitutionIfSafe as readConstitution } from '../constitution/repository.js';
+import { SpecwrightError } from '../errors.js';
 import { readDecisions } from '../decisions/repository.js';
 import { readArtifact, readAllFeatures, readFeature, assertValid } from '../features/repository.js';
 import type { Feature, Task } from '../features/types.js';
@@ -40,8 +41,14 @@ function taskItems(terms: string[], f: Feature): ContextItem[] {
 
 async function planSections(root: string, f: Feature): Promise<Section[]> {
   if (!f.artifacts.includes('plan')) return [];
-  const { raw } = await readArtifact(root, f.id, 'plan');
-  return parseDocument(stripComments(raw.replace(/\r\n?/g, '\n'))).sections;
+  try {
+    const { raw } = await readArtifact(root, f.id, 'plan');
+    return parseDocument(stripComments(raw.replace(/\r\n?/g, '\n'))).sections;
+  } catch (error) {
+    // A plan that cannot be read safely is left out of the context, not fatal for the whole call.
+    if (error instanceof SpecwrightError) return [];
+    throw error;
+  }
 }
 
 /**

@@ -15,6 +15,7 @@ export function buildFeature(id: string, files: { spec?: string; tasks?: string 
   else {
     if (!spec.title) errors.push('spec.md has no "# Feature Specification: <title>" heading');
     if (!spec.status) warnings.push('spec.md has no **Status** line');
+    warnings.push(...spec.warnings);
     for (const dup of duplicates(spec.requirements.map((r) => r.id))) errors.push(`duplicate requirement ${dup}`);
     for (const dup of duplicates(spec.successCriteria.map((r) => r.id))) errors.push(`duplicate success criterion ${dup}`);
   }

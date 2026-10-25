@@ -10,7 +10,7 @@ describe('FR-002 / FR-015: features', () => {
     expect(FEATURE_ID_PATTERN.test(id)).toBe(true);
   });
 
-  it.each(['01-short', 'archive', '001_photo', '001-Photo', '001-', '-001-x'])('FR-002: "%s" is not a feature id', (id) => {
+  it.each(['01-short', 'archive', '001_photo', '001-', '001-a/b', '-001-x'])('FR-002: "%s" is not a feature id', (id) => {
     expect(FEATURE_ID_PATTERN.test(id)).toBe(false);
   });
 

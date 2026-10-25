@@ -3,9 +3,13 @@ import type { Item, Specification, UserStory } from './types.js';
 
 const TITLE = /^#\s+Feature Specification:\s*(.+?)\s*$/;
 const META = /^\*\*(Feature Branch|Created|Status|Input)\*\*:\s*(.*?)\s*$/;
-const STORY = /^###\s+User Story\s+(\d+)\s*-\s*(.+?)\s*\(Priority:\s*(P\d+)\)\s*$/;
+// Dash variants and a trailing suffix ("🎯 MVP") are common in agent-written specs.
+const STORY = /^###\s+User Story\s+(\d+)\s*[-–—:]\s*(.+?)\s*\(Priority:\s*(P\d+)\)/;
+const STORY_LIKE = /^###\s+User Story\b/;
 const SCENARIO = /^\s*\d+\.\s+(.*\*\*Given\*\*.*)$/;
-const ITEM = /^\s*[-*]\s+\*\*((?:FR|SC)-\d{3,})\*\*:\s*(.+?)\s*$/;
+// Accepts both `**FR-001**: text` and `**FR-001:** text`.
+const ITEM = /^\s*[-*]\s+\*\*((?:FR|SC)-\d{3,}):?\*\*:?\s*(.+?)\s*$/;
+const ITEM_LIKE = /^\s*[-*]\s+\**(?:FR|SC)-\d+/;
 const CLARIFICATION = /\[NEEDS CLARIFICATION:\s*([^\]]+?)\s*\]/g;
 const HEADING = /^#{1,6}\s/;
 
@@ -22,6 +26,7 @@ export function parseSpecification(raw: string): Specification {
   const requirements: Item[] = [];
   const successCriteria: Item[] = [];
   const clarifications: string[] = [];
+  const warnings: string[] = [];
   let story: UserStory | undefined;
 
   for (const { text: line, skip } of scanLines(text)) {
@@ -33,6 +38,7 @@ export function parseSpecification(raw: string): Specification {
     const m = META.exec(line);
     if (m && meta[m[1]] === undefined) meta[m[1]] = m[2];
     const s = STORY.exec(line);
+    if (!s && STORY_LIKE.test(line)) warnings.push(`user story heading not recognized: "${line.trim()}"`);
     if (s) {
       story = { number: Number(s[1]), title: s[2], priority: s[3], scenarios: [] };
       userStories.push(story);
@@ -43,6 +49,7 @@ export function parseSpecification(raw: string): Specification {
     if (scenario) story!.scenarios.push(plain(scenario[1]));
     const item = ITEM.exec(line);
     if (item) (item[1].startsWith('FR') ? requirements : successCriteria).push({ id: item[1], text: item[2] });
+    else if (ITEM_LIKE.test(line)) warnings.push(`requirement line not recognized: "${line.trim()}"`);
   }
 
   const edgeCases = subsection(text, 'Edge Cases');
@@ -60,6 +67,7 @@ export function parseSpecification(raw: string): Specification {
     edgeCases,
     assumptions: assumptions ? listItems(assumptions.content) : [],
     clarifications,
+    warnings,
   };
 }
 

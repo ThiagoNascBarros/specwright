@@ -52,9 +52,17 @@ export async function readFeature(root: string, id: string): Promise<{ feature: 
   return { feature: buildFeature(id, { spec, tasks: tasksRaw }, artifacts), tasksRaw, tasksPath };
 }
 
+/** Every feature; one that cannot be read (escaping symlink, unreadable file) is listed as invalid instead of failing the listing. */
 export async function readAllFeatures(root: string): Promise<Feature[]> {
   const ids = await listFeatureIds(root);
-  return mapLimit(ids, READ_CONCURRENCY, async (id) => (await readFeature(root, id)).feature);
+  return mapLimit(ids, READ_CONCURRENCY, async (id) => {
+    try {
+      return (await readFeature(root, id)).feature;
+    } catch (error) {
+      const reason = error instanceof SpecwrightError ? error.message : `cannot read: ${(error as NodeJS.ErrnoException).code ?? 'error'}`;
+      return { ...buildFeature(id, {}, []), issues: [reason] };
+    }
+  });
 }
 
 /** Throws INVALID_FEATURE (issues as hint) unless the feature is valid. */
