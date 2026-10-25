@@ -848,14 +848,14 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Exports".
 
-- [ ] T057 [P] [US7] Write failing tests:
+- [X] T057 [P] [US7] Write failing tests:
   - `FR-020: mermaid caps at 40 nodes and 100 edges, quotes labels with #quot;, and uses --> for EXTRACTED and -.-> for INFERRED`;
   - `FR-020: graph.json has schema, generator, nodes, links and communities, with no timestamp, identical on two renders`;
   - `US7-AS4: the report has the section headings of plan.md § Exports and one mermaid block per top community`;
   - `FR-020: the vault has one note per non-file node at <kind>/<slug>.md with frontmatter id/kind/community, Links lines as wikilinks with aliases, and _community-<n>.md notes`;
   - `Review Focus 2: an accented label yields an ASCII slug path and keeps the label in the title`;
   - `FR-020: "#tag" in an excerpt is escaped`.
-- [ ] T058 [US7] Implement the renderers.
+- [X] T058 [US7] Implement the renderers.
 - Verify: `npx vitest run tests/unit/graph-mermaid.test.ts tests/unit/graph-export.test.ts`.
 - Commit: `feat(graph): render graph.json, a Markdown report and an Obsidian vault` + `Refs: SW-10`
 
