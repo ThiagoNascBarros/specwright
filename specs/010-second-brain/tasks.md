@@ -324,7 +324,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Ledger format".
 
-- [ ] T019 [P] Write failing tests:
+- [X] T019 [P] Write failing tests:
   - `FR-015: a new ledger renders frontmatter, title and three tables with sorted rows`;
   - `SC-006: adding one relation to an existing ledger adds exactly one line at its sorted position`;
   - `FR-015: re-saving an identical row changes nothing (unchanged=1, text identical)`;
@@ -333,7 +333,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
   - `FR-015: cells with | and newlines round-trip through escape/unescape`;
   - `FR-019: invalid rows (wrong cell count, bad confidence, NaN score) are reported in invalid[] with line numbers and skipped`;
   - `Review Focus 1: padded, hand-aligned cells parse trimmed, and an unchanged padded row is not rewritten`.
-- [ ] T020 Implement.
+- [X] T020 Implement.
 - Verify: `npx vitest run tests/unit/graph-ledger.test.ts`.
 - Commit: `feat(graph): read and update Markdown relation ledgers` + `Refs: SW-10`
 
