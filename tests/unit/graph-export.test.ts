@@ -82,6 +82,17 @@ describe('exports', () => {
     expect(note!.content).toContain('# Ação');
   });
 
+  it('FR-020: vault note paths stay unique when suffixed slugs collide with real slugs (concept:A, concept:a, concept:a-2)', () => {
+    const ids = ['concept:A', 'concept:a', 'concept:a-2'];
+    const g = graphOf(ids.map((id) => node(id)), []);
+    const c = communitiesOf([ids], ['Collide group']);
+    const notePaths = renderVault(g, c, '.specify/graph/vault')
+      .map((f) => f.path)
+      .filter((p) => !p.includes('_community-'));
+    expect(notePaths).toHaveLength(3);
+    expect(new Set(notePaths).size).toBe(3);
+  });
+
   it('FR-020: "#tag" in an excerpt is escaped', () => {
     const files = renderVault(graph, comms, '.specify/graph/vault');
     const note = files.find((f) => f.path.endsWith('concept/album-ordering.md'))!.content;

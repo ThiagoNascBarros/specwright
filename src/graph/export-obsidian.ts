@@ -9,13 +9,14 @@ const ALIAS_CHARS = 60;
 export function renderVault(graph: Graph, communities: Communities, vaultDir: string): ExportFile[] {
   const nodes = [...graph.nodes.values()].filter((n) => n.kind !== 'file');
   const slugs = new Map<string, string>();
-  const taken = new Map<string, number>();
+  const issued = new Set<string>();
   for (const n of nodes) {
     const base = slugify(n.id.slice(n.id.indexOf(':') + 1), SLUG_CHARS) || 'item';
     const key = `${n.kind}/${base}`;
-    const count = (taken.get(key) ?? 0) + 1;
-    taken.set(key, count);
-    slugs.set(n.id, count === 1 ? key : `${n.kind}/${base}-${count}`);
+    let slug = key;
+    for (let count = 2; issued.has(slug); count++) slug = `${key}-${count}`;
+    issued.add(slug);
+    slugs.set(n.id, slug);
   }
   const link = (id: string): string => slugs.get(id)!;
   const notePath = (id: string): string => `${vaultDir}/${link(id)}.md`;
