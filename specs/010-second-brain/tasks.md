@@ -297,13 +297,13 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 - A doc's label is its first `# ` heading, or the file name without `.md`.
 - Units come from `unitsOf`.
 
-- [ ] T017 [P] Write failing tests:
+- [X] T017 [P] Write failing tests:
   - `FR-002: principles get ids principle:<key> with heading lines`;
   - `FR-003: decision 0002 yields belongs_to feature:002-sharing, a "decision 0001" mention, a wikilink keep-ids-stable and a relation-line link depends_on`;
   - `FR-003: an unqualified FR-002 in a note is not a scoped mention, but 001-photo-albums/FR-002 is`;
   - `FR-002: doc label from # heading, else file name`;
   - `Review Focus 2: a note titled "Decisão de cache" keeps its label`.
-- [ ] T018 Implement.
+- [X] T018 Implement.
 - Verify: `npx vitest run tests/unit/graph-facts-memory.test.ts`.
 - Commit: `feat(graph): derive nodes and raw edges from project memory` + `Refs: SW-10`
 
