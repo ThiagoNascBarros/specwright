@@ -868,12 +868,12 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Modify: `src/graph/repository.ts` (add `writeExport(root: string, target: { kind: 'file'; path: string } | { kind: 'vault'; dir: string }, files: ExportFile[]): Promise<{ written: number; unchanged: number; removed: number; skipped: string[] }>`, which has manifest handling for the vault and writes through `resolveWithin` with `[GRAPH_DIR]` or `[vaultDir]`), `src/graph/index.ts`, `tests/contract/server.test.ts`
 - Test: `tests/integration/graph-export.test.ts`
 
-- [ ] T059 [US7] Write failing tests:
+- [X] T059 [US7] Write failing tests:
   - `US7-AS3: obsidian export twice → the second run reports written 0; a user note placed in the vault (not in the manifest) is reported in skipped and unchanged; .obsidian/ is never created; owned notes for deleted nodes are removed`;
   - `US7-AS4: report export writes .specify/graph/GRAPH_REPORT.md`;
   - `FR-020: json export writes .specify/graph/graph.json`;
   - `FR-021: vaultDir "brain" exports to brain/ and no other path outside .specify/ is written`.
-- [ ] T060 [US7] Implement `writeExport` and the tool, and register it.
+- [X] T060 [US7] Implement `writeExport` and the tool, and register it.
 - Verify: `npm test` is green.
 - Commit: `feat(graph): add export_graph` + `Refs: SW-10`
 
