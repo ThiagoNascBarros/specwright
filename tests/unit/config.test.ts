@@ -70,3 +70,19 @@ describe('FR-021: graph config', () => {
     }
   });
 });
+
+describe('FR-021: graph.vaultDir under .specify/graph', () => {
+  const graphFile = (graph: string) => ({ '.specify/specwright.json': `{"graph": ${graph}}` });
+
+  it('FR-021: graph.vaultDir accepts ".specify/graph" itself (equal to or under .specify/graph)', async () => {
+    const { project } = await makeProject(graphFile('{"vaultDir": ".specify/graph"}'));
+    expect(loadConfig({}, project).graph.vaultDir).toBe('.specify/graph');
+  });
+
+  it('FR-021: graph.vaultDir rejects empty, ".", ".." segments and backslashes under .specify/graph', async () => {
+    for (const bad of ['.specify/graph//x', '.specify/graph/./x', '.specify/graph/../x', '.specify/graph/a\\b']) {
+      const { project } = await makeProject(graphFile(JSON.stringify({ vaultDir: bad })));
+      expect(() => loadConfig({}, project), bad).toThrow(/Invalid .*specwright\.json/);
+    }
+  });
+});

@@ -20,7 +20,8 @@ export interface Config {
 
 export const DEFAULT_MAX_RESPONSE_CHARS = 20000;
 export const CONFIG_FILE = '.specify/specwright.json';
-export const DEFAULT_GRAPH_CONFIG: GraphConfig = { include: [], cache: 'disk', vaultDir: '.specify/graph/vault' };
+const GRAPH_DIR = '.specify/graph';
+export const DEFAULT_GRAPH_CONFIG: GraphConfig = { include: [], cache: 'disk', vaultDir: `${GRAPH_DIR}/vault` };
 const GRAPH_INCLUDE_MAX = 20;
 
 // shortcut: the shared path guard (Task 3) will replace this inline check.
@@ -46,8 +47,9 @@ function parseGraph(value: unknown, file: string): GraphConfig {
   if (!(GRAPH_CACHE_MODES as readonly unknown[]).includes(cache)) {
     throw invalid(`graph.cache must be one of ${GRAPH_CACHE_MODES.join(', ')}`);
   }
-  const insideGraphDir = typeof vaultDir === 'string' && vaultDir.startsWith('.specify/graph/') && !vaultDir.split('/').includes('..');
-  if (typeof vaultDir !== 'string' || !(insideGraphDir || isSafeRelativeDir(vaultDir))) {
+  const underGraphDir = (dir: string) => dir === GRAPH_DIR
+    || (dir.startsWith(`${GRAPH_DIR}/`) && dir.slice(GRAPH_DIR.length + 1).split('/').every((s) => s !== '' && s !== '.' && s !== '..' && !s.includes('\\')));
+  if (typeof vaultDir !== 'string' || !(underGraphDir(vaultDir) || isSafeRelativeDir(vaultDir))) {
     throw invalid('graph.vaultDir must be under .specify/graph or a safe folder outside specs/');
   }
   return { include: folders, cache: cache as GraphConfig['cache'], vaultDir };
