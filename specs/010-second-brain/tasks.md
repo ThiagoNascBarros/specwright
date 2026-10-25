@@ -392,7 +392,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Data model", § "Edge derivation", § "Link resolution" and § "Ledger format".
 
-- [ ] T023 Write failing tests in `tests/unit/graph-build.test.ts`, building from `factsOf` over the brain fixture's files read with `fs` in the test:
+- [X] T023 Write failing tests in `tests/unit/graph-build.test.ts`, building from `factsOf` over the brain fixture's files read with `fs` in the test:
   - `FR-003: task T005 → implements US2, references FR-002, touches file:src/albums/sort.ts`;
   - `FR-003: decision 0002 → belongs_to feature:002-sharing, references decision:0001, links_to note:keep-ids-stable, depends_on decision:0001 (EXTRACTED, origin relation-line)`;
   - `FR-003: 002-sharing FR-001 references requirement:001-photo-albums/FR-003 (qualified mention)`;
@@ -401,7 +401,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
   - `FR-014: a REJECTED row removes the same INFERRED triple`;
   - `FR-019: a missing wikilink gives broken_link; a ledger row with a missing target gives dangling_relation and no edge`;
   - `FR-026: building twice from shuffled facts gives identical JSON`.
-- [ ] T024 Implement.
+- [X] T024 Implement.
 - Verify: `npx vitest run tests/unit/graph-build.test.ts`, then `npm run typecheck`.
 - Commit: `feat(graph): build the project graph from per-file facts` + `Refs: SW-10`
 
