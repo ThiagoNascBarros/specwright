@@ -38,7 +38,12 @@ describe('scoreNodes and pickSeeds', () => {
 
   it('FR-009: an id in the question scores 1000', () => {
     const hit = scoreNodes(g, 'What does 001-photo-albums/FR-002 require?').find((x) => x.id === 'requirement:001-photo-albums/FR-002');
-    expect(hit?.score).toBeGreaterThanOrEqual(1000);
+    expect(hit?.score).toBe(1000);
+  });
+
+  it('FR-009: a source path in the question scores its artifact 1000', () => {
+    const hit = scoreNodes(g, 'what is in specs/001-photo-albums/spec.md?').find((x) => x.id === 'artifact:001-photo-albums/spec');
+    expect(hit?.score).toBe(1000);
   });
 
   it('FR-009: with feature, seeds come from that feature', () => {

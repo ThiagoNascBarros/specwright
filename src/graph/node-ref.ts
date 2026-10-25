@@ -15,7 +15,7 @@ export function resolveNodeRef(graph: Graph, ref: string, feature: string | unde
   if (shortId !== undefined) return graph.nodes.get(shortId)!;
 
   // A source path names its file's node: the line-1 artifact, note, decision or doc (a spec's feature node is excluded).
-  const byPath = matching(graph, (n) => n.path === ref && n.kind !== 'feature' && n.line === 1);
+  const byPath = pathNodes(graph, ref);
   if (byPath.length) return single(ref, byPath);
 
   if (options.allowLabel) {
@@ -30,6 +30,11 @@ export function resolveNodeRef(graph: Graph, ref: string, feature: string | unde
     `No node matches "${ref}".`,
     closest.length ? `Closest: ${closest.join(', ')}` : 'Call query_graph to search.',
   );
+}
+
+/** Nodes that name a source file: its line-1 node, except a spec's feature node (shared with search.ts). */
+export function pathNodes(graph: Graph, path: string): GraphNode[] {
+  return matching(graph, (n) => n.path === path && n.kind !== 'feature' && n.line === 1);
 }
 
 function matching(graph: Graph, keep: (node: GraphNode) => boolean): GraphNode[] {

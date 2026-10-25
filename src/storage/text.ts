@@ -45,7 +45,7 @@ const BARE_PATH = /(?:^|\s)((?:[\w@.-]+\/)+[\w@.-]+\.[a-zA-Z0-9]{1,8})(?=[\s,;:)
 /** Feature id and item id patterns (FR/SC/US/T), shared with graph mentions. */
 export const FEATURE_ID_SOURCE = String.raw`(?:\d{3,}|\d{8}-\d{6})-[\p{L}\p{N}][\p{L}\p{N}_-]*`;
 export const ITEM_ID_SOURCE = String.raw`(?:(?:FR|SC)-\d{3,}|US\d+|T\d{3,})`;
-const QUALIFIED_ID = new RegExp(`^${FEATURE_ID_SOURCE}/${ITEM_ID_SOURCE}$`, 'u');
+export const QUALIFIED_ID = new RegExp(`^${FEATURE_ID_SOURCE}/${ITEM_ID_SOURCE}$`, 'u');
 const PATH_LIKE = /^(?:\.{0,2}\/)?[\w@.-]+(?:\/[\w@.-]+)*\.[a-zA-Z0-9]{1,8}$|^[\w@.-]+(?:\/[\w@.-]+)+\/?$/;
 
 /** Paths cited in backticks or bare in `text`, unique, in order of first appearance. Pure text work. */

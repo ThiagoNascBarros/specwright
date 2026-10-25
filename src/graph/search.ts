@@ -1,6 +1,7 @@
 import { tokenize } from '../storage/text.js';
 import { degree } from './graph.js';
 import { refIdCandidates } from './ids.js';
+import { pathNodes } from './node-ref.js';
 import type { Graph } from './types.js';
 
 export type Scored = { id: string; score: number };
@@ -37,25 +38,26 @@ function indexOf(graph: Graph): Index {
   return index;
 }
 
-/** Nodes the question names by exact id or by a short id, with `feature` as the scope of short ids. */
+/** Nodes the question names by exact id, short id or source path; `feature` scopes short ids. */
 function idHits(graph: Graph, question: string, feature?: string): string[] {
   const hits: string[] = [];
   for (const raw of question.split(/\s+/)) {
     const token = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
     if (graph.nodes.has(token)) hits.push(token);
     hits.push(...refIdCandidates(token, feature).filter((id) => graph.nodes.has(id)));
+    hits.push(...pathNodes(graph, token).map((n) => n.id));
   }
   return hits;
 }
 
-/** Nodes scored for a question: 1000 per id hit plus the weights of the question's terms (plan.md "Query algorithm"). */
+/** Nodes scored for a question: id hits score exactly 1000, other nodes the weights of the question's terms (plan.md "Query algorithm"). */
 export function scoreNodes(graph: Graph, question: string, feature?: string): Scored[] {
   const scores = new Map<string, number>();
-  for (const id of idHits(graph, question, feature)) scores.set(id, ID_HIT_SCORE);
   const index = indexOf(graph);
   for (const term of new Set(tokenize(question))) {
     for (const [id, weight] of index.get(term) ?? []) scores.set(id, (scores.get(id) ?? 0) + weight);
   }
+  for (const id of new Set(idHits(graph, question, feature))) scores.set(id, ID_HIT_SCORE);
   let ranked = [...scores].filter(([, score]) => score > 0);
   if (feature !== undefined) {
     const scoped = ranked.filter(([id]) => graph.nodes.get(id)?.feature === feature);
