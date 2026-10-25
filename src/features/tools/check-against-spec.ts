@@ -13,7 +13,7 @@ export function registerCheckAgainstSpec(server: McpServer, config: Config) {
       description:
         'Before declaring work done, send your unified diff and the feature id to get its requirements, success criteria, user stories with acceptance scenarios, edge cases, open tasks and a summary of the changed files. Compare them yourself and report what is missing or out of scope.',
       inputSchema: z.object({ feature: featureIdSchema, diff: z.string().max(5_000_000) }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ feature, diff }: { feature: string; diff: string }) => {
       const { feature: f } = await readFeature(config.root, feature);

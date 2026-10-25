@@ -12,7 +12,7 @@ export function registerListFeatures(server: McpServer, config: Config) {
       description:
         'List the Spec Kit features in specs/ with title, status, artifacts present and task progress. Call it first to find the feature your task belongs to.',
       inputSchema: z.object({ status: z.string().min(1).optional() }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ status }: { status?: string }) => {
       const features = await readAllFeatures(config.root);

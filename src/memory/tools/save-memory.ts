@@ -18,7 +18,7 @@ export function registerSaveMemory(server: McpServer, config: Config, deps: Deps
         body: z.string().trim().min(1),
         tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
       }),
-      annotations: { destructiveHint: false },
+      annotations: { openWorldHint: false, destructiveHint: false },
     },
     tool(config.maxResponseChars, (input: NewMemory) => createMemory(config.root, input, deps.now())),
   );

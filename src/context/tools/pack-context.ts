@@ -23,7 +23,7 @@ export function registerPackContext(server: McpServer, config: Config) {
         budget_tokens: z.number().int().min(200).max(100_000).optional(),
         feature: featureIdSchema.optional(),
       }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ task, budget_tokens = DEFAULT_BUDGET, feature }: { task: string; budget_tokens?: number; feature?: string }) => {
       const terms = tokenize(task);
