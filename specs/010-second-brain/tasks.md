@@ -705,13 +705,13 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Community detection and analysis".
 
-- [ ] T045 [P] [US3] Write failing tests:
+- [X] T045 [P] [US3] Write failing tests:
   - `FR-017: godNodes ignores contains/belongs_to and file/artifact/feature nodes`;
   - `FR-018: surprisingConnections scores per the table, keeps one edge per community pair, and every result has a why`;
   - `FR-018: suggestQuestions interleaves generator types, at most 7`;
   - `FR-018: cohesion of a triangle is 1`;
   - `FR-017: bridges lists members linked to other communities, most connected first`.
-- [ ] T046 [US3] Implement.
+- [X] T046 [US3] Implement.
 - Verify: `npx vitest run tests/unit/graph-analyze.test.ts`.
 - Commit: `feat(graph): find god nodes, surprising links and questions` + `Refs: SW-10`
 
