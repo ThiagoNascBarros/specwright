@@ -1,16 +1,19 @@
-import { mkdir, readdir, readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { DECISION_FILE, DECISIONS_DIR } from '../decisions/repository.js';
 import { FEATURE_ID_PATTERN } from '../features/types.js';
 import { MEMORY_DIR } from '../memory/repository.js';
-import { createExclusive, listMarkdown, listMarkdownTree, readTextIfExists, writeAtomic } from '../storage/files.js';
+import { createExclusive, listMarkdown, listMarkdownTree, readTextIfExists, writeAtomic, writeAtomicIfChanged } from '../storage/files.js';
 import { withLock } from '../storage/lock.js';
 import { ALLOWED_TOP_LEVEL, resolveInside, resolveWithin } from '../storage/paths.js';
 import { tripleKey } from './build.js';
 import { applyLedgerChanges, ledgerPath, parseLedger } from './ledger.js';
 import type { LedgerChanges } from './ledger.js';
 import { EXTRACTOR_VERSION, GRAPH_DIR, RELATIONS_DIR, SNAPSHOT_SCHEMA } from './types.js';
-import type { FileFacts, Relation, SourceFile, SourceKind } from './types.js';
+import type { ExportFile, FileFacts, Relation, SourceFile, SourceKind } from './types.js';
+
+const MANIFEST = '.specwright-manifest.json';
 
 export type Snapshot = { schema: number; extractor: number; files: Record<string, { size: number; mtimeMs: number; facts: FileFacts }> };
 
@@ -125,4 +128,67 @@ export function writeLedgerChanges(root: string, scope: string, changes: LedgerC
   });
   ledgerQueue = run.catch(() => undefined);
   return run;
+}
+
+/** Writes export files: a file target under GRAPH_DIR, or a vault whose owned files are tracked in its manifest (plan.md "Exports"). */
+export async function writeExport(
+  root: string,
+  target: { kind: 'file'; path: string } | { kind: 'vault'; dir: string },
+  files: ExportFile[],
+): Promise<{ written: number; unchanged: number; removed: number; skipped: string[] }> {
+  const result = { written: 0, unchanged: 0, removed: 0, skipped: [] as string[] };
+  if (target.kind === 'file') {
+    await ensureGraphDir(root);
+    for (const f of files) {
+      const abs = await resolveWithin(root, f.path, [GRAPH_DIR]);
+      if (await writeAtomicIfChanged(abs, f.content)) result.written++;
+      else result.unchanged++;
+    }
+    return result;
+  }
+  const manifestPath = `${target.dir}/${MANIFEST}`;
+  const previous = new Set(parseManifest(await readTextIfExists(await resolveWithin(root, manifestPath, [target.dir]))));
+  const owned: string[] = [];
+  for (const f of files) {
+    if (f.path === manifestPath) continue;
+    const abs = await resolveWithin(root, f.path, [target.dir]);
+    // A file we did not write is the user's: never overwrite it, and never list it in the manifest.
+    if (!previous.has(f.path) && (await readTextIfExists(abs)) !== undefined) {
+      result.skipped.push(f.path);
+      continue;
+    }
+    owned.push(f.path);
+    await mkdir(dirname(abs), { recursive: true });
+    if (await writeAtomicIfChanged(abs, f.content)) result.written++;
+    else result.unchanged++;
+  }
+  owned.sort(cmp);
+  const ownedSet = new Set(owned);
+  const manifestAbs = await resolveWithin(root, manifestPath, [target.dir]);
+  if (await writeAtomicIfChanged(manifestAbs, `${JSON.stringify({ files: owned }, null, 2)}\n`)) result.written++;
+  else result.unchanged++;
+  for (const path of previous) {
+    if (ownedSet.has(path)) continue;
+    const abs = await resolveWithin(root, path, [target.dir]);
+    if ((await readTextIfExists(abs)) !== undefined) {
+      await rm(abs, { force: true });
+      result.removed++;
+    }
+  }
+  return result;
+}
+
+function parseManifest(raw: string | undefined): string[] {
+  if (raw === undefined) return [];
+  try {
+    const files = (JSON.parse(raw) as { files?: unknown }).files;
+    return Array.isArray(files) ? files.filter((f): f is string => typeof f === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The package version from package.json, for the `generator` field of graph.json. */
+export function packageVersion(): string {
+  return (JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version: string }).version;
 }

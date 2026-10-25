@@ -4,10 +4,8 @@ import type { ExportFile, Graph, GraphNode } from './types.js';
 
 const SLUG_CHARS = 80;
 const ALIAS_CHARS = 60;
-const MANIFEST = '.specwright-manifest.json';
-const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-/** The vault: one note per non-file node, community notes and a manifest of owned files (plan.md "Exports"). Paths are root-relative. */
+/** The vault: one note per non-file node and one note per community (plan.md "Exports"). Paths are root-relative; writeExport owns the manifest. */
 export function renderVault(graph: Graph, communities: Communities, vaultDir: string): ExportFile[] {
   const nodes = [...graph.nodes.values()].filter((n) => n.kind !== 'file');
   const slugs = new Map<string, string>();
@@ -31,8 +29,6 @@ export function renderVault(graph: Graph, communities: Communities, vaultDir: st
     const body = members.map((m) => `- [[${link(m.id)}|${alias(m.label)}]]`);
     files.push({ path: `${vaultDir}/_community-${c.id}.md`, content: `# ${c.label}\n\n${body.join('\n')}\n` });
   }
-  const owned = files.map((f) => f.path).sort(cmp);
-  files.push({ path: `${vaultDir}/${MANIFEST}`, content: `${JSON.stringify({ files: owned }, null, 2)}\n` });
   return files;
 }
 

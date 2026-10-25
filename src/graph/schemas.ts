@@ -61,3 +61,7 @@ export const lintMemoryInput = z.object({
   feature: featureIdSchema.optional(),
   limit: z.number().int().min(1).max(1000).optional(),
 });
+
+export const exportGraphInput = z.object({
+  format: z.enum(['json', 'report', 'obsidian']),
+});
