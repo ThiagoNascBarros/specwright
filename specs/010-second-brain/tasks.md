@@ -542,12 +542,12 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Interfaces (produces):** `shortestPath(graph: Graph, from: string, to: string, opts: { maxHops: number; includeAmbiguous: boolean }): { nodes: string[]; edges: number[] } | undefined`
 
-- [ ] T034 [P] [US1] Write failing tests:
+- [X] T034 [P] [US1] Write failing tests:
   - `FR-011: note:keep-ids-stable → requirement:001-photo-albums/FR-001 returns the shortest path and the same path on every call`;
   - `FR-011: between two parallel edges the higher score wins`;
   - `FR-011: no path within maxHops → undefined`;
   - `FR-011: from === to → a 0-hop path`.
-- [ ] T035 [US1] Implement.
+- [X] T035 [US1] Implement.
 - Verify: `npx vitest run tests/unit/graph-path.test.ts`.
 - Commit: `feat(graph): find shortest paths between nodes` + `Refs: SW-10`
 
