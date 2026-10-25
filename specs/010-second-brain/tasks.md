@@ -1009,12 +1009,12 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Create: `docs/tdd/phase-5.md`
 - Modify: `specs/010-second-brain/spec.md` (status), `specs/010-second-brain/tasks.md` (checkboxes)
 
-- [ ] T074 Write `docs/tdd/phase-5.md` in the format of `docs/tdd/phase-4.md`: a RED → GREEN table per task group, a requirement and scenario → tests map (every FR-001…FR-030, SC-001…SC-007, USn-ASm), and the perf and load results from T054.
-- [ ] T075 Run `npm run typecheck`, `npm test` and `npm run test:load`, and paste the summary lines into the TDD record. Run `check_against_spec` for `010-second-brain` with the branch diff (`git diff main...HEAD`), and confirm every FR, SC and scenario is covered.
+- [X] T074 Write `docs/tdd/phase-5.md` in the format of `docs/tdd/phase-4.md`: a RED → GREEN table per task group, a requirement and scenario → tests map (every FR-001…FR-030, SC-001…SC-007, USn-ASm), and the perf and load results from T054.
+- [X] T075 Run `npm run typecheck`, `npm test` and `npm run test:load`, and paste the summary lines into the TDD record. Run `check_against_spec` for `010-second-brain` with the branch diff (`git diff main...HEAD`), and confirm every FR, SC and scenario is covered.
   - Known issue, outside this feature: with this spec's size, `respond()` trims the first array field (`requirements`) to zero and sets `truncated: true`.
   - Work around it by reading the requirements with `get_artifact` (`artifact: "spec"`, `section: "Requirements"`), or by running the check on a copy whose `.specify/specwright.json` sets `maxResponseChars: 80000`.
   - Do not change `respond()` in this feature.
-- [ ] T076 Record the non-obvious decisions with `log_decision` (feature `010-second-brain`), one each:
+- [X] T076 Record the non-obvious decisions with `log_decision` (feature `010-second-brain`), one each:
   - R2 (Markdown ledgers as source of truth);
   - R5 + R6 (client-side extraction with coverage hashes in Git);
   - R7 (fingerprint-validated cache, no Redis);
