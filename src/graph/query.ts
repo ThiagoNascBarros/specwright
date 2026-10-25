@@ -10,6 +10,17 @@ const NO_MATCH_HINT = 'No node matches; try different words, get_node with an id
 const PLACEHOLDER = 99999999; // widest value the counters can take, so the first fit never undercounts
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/** Iterates `used_tokens` to a fixed point: only the digit width of the counter can change the estimate, so it settles in one or two steps. */
+function settle(build: (used: number) => Record<string, unknown>, start: number): number {
+  let used = start;
+  for (let i = 0; i < 4; i++) {
+    const next = tokensOf(JSON.stringify(build(used)));
+    if (next === used) break;
+    used = next;
+  }
+  return used;
+}
+
 /** Answers a question with a ranked subgraph that fits the token budget (plan.md "Query algorithm", query.ts). */
 export function queryGraph(graph: Graph, input: QueryInput): Record<string, unknown> {
   const { question, feature, mode, depth, budgetTokens, includeAmbiguous } = input;
@@ -47,27 +58,32 @@ export function queryGraph(graph: Graph, input: QueryInput): Record<string, unkn
   });
   const edgeItems = edgeIndexes.map((i) => ({ endpoints: [graph.edges[i].source, graph.edges[i].target] as [string, string], value: edgeTuple(graph.edges[i]) }));
 
-  const respond = (used: number, fit: { omitted: { nodes: number; edges: number }; neededTokens: number; nodes: unknown[]; edges: unknown[] }): Record<string, unknown> => ({
+  const hint = seeds.length === 0 ? { hint: NO_MATCH_HINT } : {};
+  const shape = (used: number, nodes: unknown[], edges: unknown[], omitted: { nodes: number; edges: number }, needed?: number): Record<string, unknown> => ({
     question,
     seeds,
-    nodes: fit.nodes,
-    edges: fit.edges,
+    nodes,
+    edges,
     budget_tokens: budgetTokens,
     used_tokens: used,
-    omitted: fit.omitted,
-    ...(fit.omitted.nodes + fit.omitted.edges > 0 ? { needed_budget_tokens: fit.neededTokens } : {}),
-    ...(seeds.length === 0 ? { hint: NO_MATCH_HINT } : {}),
+    omitted,
+    ...(needed === undefined ? {} : { truncated: true, needed_budget_tokens: needed }),
+    ...hint,
   });
 
-  const placeholder = { question, seeds, budget_tokens: budgetTokens, used_tokens: PLACEHOLDER, omitted: { nodes: PLACEHOLDER, edges: PLACEHOLDER }, needed_budget_tokens: PLACEHOLDER, ...(seeds.length === 0 ? { hint: NO_MATCH_HINT } : {}) };
-  const fit = fitToBudget({ envelope: placeholder, nodes: nodeItems, edges: edgeItems, pinned: seeds.length, budgetTokens });
+  // Placeholder counters are the widest the fields can take, so the first fit never undercounts the real response.
+  const placeholderOmitted = { nodes: PLACEHOLDER, edges: PLACEHOLDER };
+  const fit = fitToBudget({
+    envelope: shape(PLACEHOLDER, [], [], placeholderOmitted, PLACEHOLDER),
+    nodes: nodeItems,
+    edges: edgeItems,
+    pinned: seeds.length,
+    budgetTokens,
+  });
+  const truncated = fit.omitted.nodes + fit.omitted.edges > 0;
 
-  // The real counters are no longer than the placeholders, so the fitted response stays within budget. Iterate to a fixed point.
-  let used = fit.usedTokens;
-  for (let i = 0; i < 4; i++) {
-    const next = tokensOf(JSON.stringify(respond(used, fit)));
-    if (next === used) break;
-    used = next;
-  }
-  return respond(used, fit);
+  // Plan step 4: needed_budget_tokens is the estimate of the full, untruncated response (fixed point on its own used_tokens).
+  const needed = settle((u) => shape(u, nodeItems.map((n) => n.value), edgeItems.map((e) => e.value), { nodes: 0, edges: 0 }), 0);
+  const used = settle((u) => shape(u, fit.nodes, fit.edges, fit.omitted, truncated ? needed : undefined), fit.usedTokens);
+  return shape(used, fit.nodes, fit.edges, fit.omitted, truncated ? needed : undefined);
 }

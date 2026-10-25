@@ -43,7 +43,7 @@ export function traverse(graph: Graph, seeds: string[], opts: TraverseOptions): 
       frontier = next;
     }
   } else {
-    // Each stack entry is a node reached over `edge` at `depth`; the first pop of a node fixes its distance.
+    // Each stack entry is a node reached over `edge` at `depth`; the first pop fixes its distance, so a node first met at the depth limit is never re-reached shallower (plan.md "Query algorithm", DFS).
     const stack: Array<{ id: string; depth: number; edge?: number }> = roots.map((id) => ({ id, depth: 0 })).reverse();
     while (stack.length) {
       const { id, depth: d, edge } = stack.pop()!;
@@ -52,7 +52,7 @@ export function traverse(graph: Graph, seeds: string[], opts: TraverseOptions): 
       if (edge !== undefined) tree.set(id, edge);
       if (d >= depth || !expandable(id)) continue;
       // Best neighbour first: score desc, then id asc. Pushed in reverse so it is popped first.
-      const neighbours = usable(id).sort((a, b) => b.edge.score - a.edge.score || cmp(a.other, b.other));
+      const neighbours = usable(id).sort((a, b) => b.edge.score - a.edge.score || cmp(a.other, b.other) || cmp(a.edge.relation, b.edge.relation) || a.index - b.index);
       for (const n of neighbours.reverse()) {
         if (dist.has(n.other) || seedSet.has(n.other)) continue;
         stack.push({ id: n.other, depth: d + 1, edge: n.index });
