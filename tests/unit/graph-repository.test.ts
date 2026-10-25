@@ -17,7 +17,7 @@ describe('graph repository', () => {
     expect(got).toEqual([
       ['specs/001-a/contracts/api.md', 'contract', '001-a'], ['specs/001-a/plan.md', 'plan', '001-a'], ['specs/001-a/spec.md', 'spec', '001-a'],
       ['.specify/memory/constitution.md', 'constitution', undefined], ['.specify/memory/decisions/0001-x.md', 'decision', undefined],
-      ['.specify/memory/notes/n.md', 'note', undefined], ['.specify/memory/relations/project.md', 'ledger', undefined],
+      ['.specify/memory/notes/n.md', 'note', undefined], ['.specify/memory/relations/project.md', 'ledger', undefined], ['docs/x.md', 'doc', undefined],
     ]);
   });
 

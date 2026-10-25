@@ -19,7 +19,7 @@ const ARTIFACTS: Array<[string, SourceKind]> = [['data-model.md', 'data-model'],
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Source files with their stat, in plan order. `include` is honoured from Task 27. Escaping symlinks are skipped. */
-export async function discoverSources(root: string, _include: readonly string[]): Promise<SourceFile[]> {
+export async function discoverSources(root: string, include: readonly string[]): Promise<SourceFile[]> {
   const candidates: Array<Omit<SourceFile, 'size' | 'mtimeMs'>> = [];
   const specs = await resolveInside(root, 'specs');
   let folders: string[] = [];
@@ -41,11 +41,16 @@ export async function discoverSources(root: string, _include: readonly string[])
   await flat(DECISIONS_DIR, 'decision', (n) => DECISION_FILE.test(n));
   await flat(MEMORY_DIR, 'note');
   await flat(RELATIONS_DIR, 'ledger');
+  // graph.include folders: a symlink that leaves the root throws PATH_OUTSIDE_ROOT here, on purpose.
+  for (const dir of include) {
+    const folder = dir.replace(/\/+$/, '');
+    for (const n of await listMarkdownTree(await resolveWithin(root, folder, include))) candidates.push({ path: `${folder}/${n}`, kind: 'doc' });
+  }
 
   const sources: SourceFile[] = [];
   for (const c of candidates) {
     try {
-      const s = await stat(await resolveInside(root, c.path));
+      const s = await stat(await resolveWithin(root, c.path, [...ALLOWED_TOP_LEVEL, ...include]));
       if (s.isFile()) sources.push({ ...c, size: s.size, mtimeMs: s.mtimeMs });
     } catch (error) {
       const code = (error as { code?: string }).code;
