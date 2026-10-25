@@ -457,14 +457,14 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Community detection and analysis" and research.md § 5.
 
-- [ ] T028 [P] Write failing tests:
+- [X] T028 [P] Write failing tests:
   - `FR-018: two cliques joined by one edge give two communities`;
   - `FR-018: ids are ordered by size desc, then smallest member id`;
   - `FR-018: a disconnected community is split into its components`;
   - `FR-018: labels prefer the top-degree non-file member, prefixed with the feature title when one feature owns more than half the members`;
   - `FR-026: the same graph built from shuffled facts gives identical communities`;
   - `FR-018: the brain fixture gives at least 2 communities and every node gets one`.
-- [ ] T029 Implement the deterministic Louvain, the split, ids and labels, and `communitiesOf`.
+- [X] T029 Implement the deterministic Louvain, the split, ids and labels, and `communitiesOf`.
 - Verify: `npx vitest run tests/unit/graph-community.test.ts`.
 - Commit: `feat(graph): detect communities with deterministic Louvain` + `Refs: SW-10`
 
