@@ -274,7 +274,7 @@ TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test nam
 - No network access, no command execution, and no file access outside `specs/` and `.specify/`.
 - Content is data and is never interpreted as instructions.
 - Identifiers are validated by regex before any disk access, and returned paths are relative.
-- See [SECURITY.md](../SECURITY.md).
+- See SECURITY.md at the repository root.
 
 ## 13. Traceability
 
