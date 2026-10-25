@@ -31,7 +31,7 @@ function sourceOf(path: string): SourceFile {
 const g = buildGraph(walk('').map((p) => factsOf(sourceOf(p), readFileSync(join(ROOT, p), 'utf8'))));
 const base = { mode: 'bfs' as const, depth: 2, includeAmbiguous: false };
 const album = { ...base, question: 'album sorting', feature: '001-photo-albums' };
-type Out = { seeds: string[]; nodes: Array<{ id: string }>; edges: unknown[]; used_tokens: number; budget_tokens: number; truncated?: boolean; needed_budget_tokens?: number; omitted: { nodes: number; edges: number } };
+type Out = { seeds: string[]; nodes: Array<{ id: string }>; edges: unknown[]; used_tokens: number; budget_tokens: number; needed_budget_tokens?: number; omitted: { nodes: number; edges: number } };
 
 describe('queryGraph', () => {
   it('US1-AS1 (unit): on the brain graph, "album sorting" with feature 001-photo-albums returns T005, US2, FR-002, file:src/albums/sort.ts and the implements/references/touches tuples', () => {
@@ -51,12 +51,13 @@ describe('queryGraph', () => {
     ]));
   });
 
-  it('FR-009: a 200-token budget keeps every seed and reports truncation with omitted counts', () => {
+  it('FR-009: a 200-token budget keeps every seed, reports omitted counts and needed_budget_tokens', () => {
     const r = queryGraph(g, { ...album, budgetTokens: 200 }) as unknown as Out;
     const ids = r.nodes.map((n) => n.id);
     expect(r.budget_tokens).toBe(200);
     for (const seed of r.seeds) expect(ids).toContain(seed);
-    expect(r.truncated).toBe(true);
+    expect(r).not.toHaveProperty('truncated');
+    expect(r.needed_budget_tokens).toBeGreaterThan(200);
     expect(r.omitted.nodes).toBeGreaterThan(0);
   });
 
@@ -70,8 +71,7 @@ describe('queryGraph', () => {
     // The budget is echoed in the response, so the two budgets have the same width (4 digits) and the lengths are comparable.
     const truncated = queryGraph(g, { ...album, budgetTokens: 1000 }) as unknown as Out;
     const full = queryGraph(g, { ...album, budgetTokens: 2000 }) as unknown as Out;
-    expect(truncated.truncated).toBe(true);
-    expect(full.truncated).toBeUndefined();
+    expect(full).not.toHaveProperty('needed_budget_tokens');
     expect(full.needed_budget_tokens).toBeUndefined();
     expect(truncated.needed_budget_tokens).toBe(full.used_tokens);
   });

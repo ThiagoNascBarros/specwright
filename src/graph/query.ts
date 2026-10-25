@@ -67,7 +67,7 @@ export function queryGraph(graph: Graph, input: QueryInput): Record<string, unkn
     budget_tokens: budgetTokens,
     used_tokens: used,
     omitted,
-    ...(needed === undefined ? {} : { truncated: true, needed_budget_tokens: needed }),
+    ...(needed === undefined ? {} : { needed_budget_tokens: needed }),
     ...hint,
   });
 
