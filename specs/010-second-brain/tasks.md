@@ -957,7 +957,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Create: `tests/contract/graph-workflow.test.ts`
 - Modify: `tests/integration/repository-dogfood.test.ts`
 
-- [ ] T067 Write `tests/contract/graph-workflow.test.ts`:
+- [X] T067 Write `tests/contract/graph-workflow.test.ts`:
   - `SC-004: over stdio on the brain fixture: query_graph → extraction_batch plan → fetch batch 1 → save_relations → query_graph shows the INFERRED edge → a second server process shows it too → graph_report and lint_memory succeed`;
   - `FR-026: query_graph, get_node, find_path, graph_report and lint_memory give byte-identical text in two processes`.
 
@@ -965,7 +965,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
   - pick 5 questions whose answers live in the stable, implemented content (decisions 0001–0013, specs 001–009), for example "token estimate budget" (decision 0007 with its context-pack requirement and task);
   - write down each question's expected node ids;
   - assert that each `query_graph` (`budget_tokens: 1500`) returns them, and that `used_tokens × 3 ≤ Σ ceil(chars/4)` of the distinct files that hold those nodes.
-- [ ] T068 Fix whatever T067 reveals, in the module that owns it. Any change needs a failing test first.
+- [X] T068 Fix whatever T067 reveals, in the module that owns it. Any change needs a failing test first.
 - Verify: `npm test` and `npm run test:load` are green.
 - Commit: `test(graph): add the stdio second-brain workflow and dogfood lint` + `Refs: SW-10`
 
