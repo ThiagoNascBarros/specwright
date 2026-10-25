@@ -1,6 +1,6 @@
 # Kickoff prompt: implement `010-second-brain`
 
-Paste everything below the line as the first message of a fresh agent session (Claude Code or Codex) opened at the repository root, with the Superpowers skills installed.
+Paste everything below the line as the first message of a fresh Claude Code session opened at the repository root, with the Superpowers skills installed.
 
 ---
 
@@ -109,7 +109,7 @@ These are copied from tasks.md § Global Constraints. Reviewers should get them 
 </known_pitfalls>
 
 <platform_note>
-On Codex, use its equivalents for skill invocation and subagents (for example `spawn_agent`, `wait_agent` and `close_agent`, which need `multi_agent = true` under `[features]` in `~/.codex/config.toml`). The Superpowers file `references/codex-tools.md` maps them. Everything else in this prompt applies unchanged.
+You run in Claude Code. Invoke skills with the Skill tool and dispatch subagents with the Agent tool, always passing `model` explicitly (`haiku`, `sonnet` or `opus`, per the tiers above). Subagents share this session's Specwright MCP connection.
 </platform_note>
 
 <stop_conditions>
