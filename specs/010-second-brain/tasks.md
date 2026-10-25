@@ -652,7 +652,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Interfaces (produces):** `runExtractionBatch` and `runSaveRelations`, with the descriptions and contracts of plan.md § "Tool contracts". `save_relations` uses `deps.now()` with `localDate`.
 
-- [ ] T042 [US2] Write failing integration tests on the brain fixture:
+- [X] T042 [US2] Write failing integration tests on the brain fixture:
   - `US2-AS1`: plan mode returns every unit once, and batches are within budget;
   - `US2-AS2`: fetch mode returns content, hash, instructions and candidates (including `concept:album-ordering`);
   - `US2-AS3`: save 2 relations, 1 concept and the batch's covered hashes, then `query_graph` shows the new INFERRED tuples with score, and the plan no longer lists those units;
@@ -662,7 +662,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
   - `SC-006`: one new relation into an existing ledger is a one-line diff;
   - `Review Focus 3`: a unit deleted between plan and fetch is returned in `deferred`, and a unit edited between fetch and save is rejected as `stale`;
   - `Review Focus 5`: with `maxResponseChars: 3000`, fetching a huge unit plus a small one defers the huge one and returns the small one whole.
-- [ ] T043 [US2] Implement the two tools and register them.
+- [X] T043 [US2] Implement the two tools and register them.
 - Verify: `npm test` is green.
 - Commit: `feat(graph): add extraction_batch and save_relations` + `Refs: SW-10`
 
