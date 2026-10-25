@@ -5,7 +5,7 @@ Thanks for your interest! Specwright is built with its own method: a spec first,
 ## Before you start
 
 - **Bugs:** open an issue with the bug template, including a minimal `specs/` / `.specify/` tree that reproduces it.
-- **Features:** open an issue first. Specwright keeps a hard limit of 10 tools (PRD NFR-2), so a new tool usually means replacing or merging an existing one. Discuss that before writing code.
+- **Features:** open an issue first. Specwright keeps tools distinct and non-overlapping (constitution III): each description is at most 2 sentences, each tool entry stays within 1,200 characters and the whole `tools/list` within 16,000. A new tool usually means checking first that no existing one answers the same question. Discuss that before writing code.
 - **Docs and typos:** a PR is enough.
 
 ## Development setup

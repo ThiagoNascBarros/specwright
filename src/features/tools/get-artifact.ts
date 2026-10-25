@@ -39,7 +39,7 @@ export function registerGetArtifact(server: McpServer, config: Config) {
         name: artifactFileSchema.optional(),
         section: z.string().min(1).optional(),
       }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ artifact, feature, name, section }: Args) => {
       if (artifact === 'constitution') {

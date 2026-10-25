@@ -35,31 +35,35 @@ export async function createMemory(root: string, input: NewMemory, now: Date): P
   throw new SpecwrightError('INTERNAL', `Too many memories titled "${input.title}".`);
 }
 
+/** Pure: parses one note file. Files without frontmatter or a title give `undefined`. */
+export function parseMemory(name: string, raw: string): Memory | undefined {
+  const doc = parseDocument(raw);
+  const fm = (doc.frontmatter ?? {}) as Record<string, unknown>;
+  if (!doc.frontmatter || typeof fm.title !== 'string') return undefined;
+  return {
+    id: name.slice(0, -3),
+    type: String(fm.type ?? ''),
+    title: fm.title,
+    tags: Array.isArray(fm.tags) ? fm.tags.map(String) : [],
+    date: String(fm.date ?? ''),
+    path: `${MEMORY_DIR}/${name}`,
+    body: doc.body.trim(),
+  };
+}
+
 /** Reads every memory; files without frontmatter or title are skipped. */
 export async function readMemories(root: string): Promise<Memory[]> {
   const realRoot = await ensureRoot(root);
   const names = await listMarkdown(`${realRoot}/${MEMORY_DIR}`);
   const memories = await mapLimit(names, READ_CONCURRENCY, async (name): Promise<Memory | undefined> => {
-    const path = `${MEMORY_DIR}/${name}`;
     let raw: string | undefined;
     try {
-      raw = await readTextIfExists(await resolveInside(realRoot, path));
+      raw = await readTextIfExists(await resolveInside(realRoot, `${MEMORY_DIR}/${name}`));
     } catch (error) {
       if (error instanceof SpecwrightError) return undefined;
       throw error;
     }
-    const doc = parseDocument(raw ?? '');
-    const fm = (doc.frontmatter ?? {}) as Record<string, unknown>;
-    if (!doc.frontmatter || typeof fm.title !== 'string') return undefined;
-    return {
-      id: name.slice(0, -3),
-      type: String(fm.type ?? ''),
-      title: fm.title,
-      tags: Array.isArray(fm.tags) ? fm.tags.map(String) : [],
-      date: String(fm.date ?? ''),
-      path,
-      body: doc.body.trim(),
-    };
+    return raw === undefined ? undefined : parseMemory(name, raw);
   });
   return memories.filter((m): m is Memory => m !== undefined);
 }

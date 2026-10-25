@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { afterEach } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { createServer } from '../src/server.js';
-import type { Config } from '../src/config.js';
+import { DEFAULT_GRAPH_CONFIG, type Config } from '../src/config.js';
 
 const cleanups: Array<() => Promise<void>> = [];
 
@@ -50,7 +50,7 @@ export interface ToolResponse {
 
 /** Connects an in-process client to a fresh server for `root`. */
 export async function connect(root: string, overrides: Partial<Config> = {}, now?: () => Date) {
-  const config: Config = { root, maxResponseChars: 20000, ...overrides };
+  const config: Config = { root, maxResponseChars: 20000, graph: DEFAULT_GRAPH_CONFIG, ...overrides };
   const server = createServer(config, now ? { now } : undefined);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport as never);

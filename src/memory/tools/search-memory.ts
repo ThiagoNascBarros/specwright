@@ -20,7 +20,7 @@ export function registerSearchMemory(server: McpServer, config: Config) {
         type: z.enum([...MEMORY_TYPES, 'decision', 'constitution']).optional(),
         limit: z.number().int().min(1).max(50).optional(),
       }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ query, type, limit = 10 }: { query: string; type?: string; limit?: number }) => {
       const terms = tokenize(query);

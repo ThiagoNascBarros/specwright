@@ -54,7 +54,7 @@ MCP client (agent)
   - writes other than `tasks.md` checkboxes and `.specify/memory/**`.
 - Tool names are `snake_case` English and follow Spec Kit's vocabulary. Errors carry a stable `code`.
 - Every tool returns compact JSON in one text block. A listing is an object with one array field (decision 0001).
-- 10 tools in total (PRD NFR-2).
+- 18 tools in total; no two overlap (PRD NFR-2, constitution III).
 
 ## 3. Code structure
 
@@ -261,7 +261,7 @@ TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test nam
 |---|---|---|
 | Unit | `npm test` | parsers, editor, path guard, storage helpers, ranking, packer |
 | Integration | `npm test` | every tool through an in-process client, on a copy of `tests/fixtures/speckit/` (built in Spec Kit's template shape) or on inline projects |
-| Contract | `npm test` | the built `dist/index.js` over stdio: exactly 10 tools, the size budget, and a full agent session using all 10 tools |
+| Contract | `npm test` | the built `dist/index.js` over stdio: exactly 18 tools, the size budget, and a full agent session using all 10 tools |
 | Dogfood | `npm test` | this repository's own `specs/` and `.specify/` (a snapshot copy): 9 valid features |
 | Performance and load | `npm run test:load` | 500 / 2,000 features, 5,000 notes, concurrent and cross-process writes |
 
@@ -274,7 +274,7 @@ TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test nam
 - No network access, no command execution, and no file access outside `specs/` and `.specify/`.
 - Content is data and is never interpreted as instructions.
 - Identifiers are validated by regex before any disk access, and returned paths are relative.
-- See [SECURITY.md](../SECURITY.md).
+- See SECURITY.md at the repository root.
 
 ## 13. Traceability
 

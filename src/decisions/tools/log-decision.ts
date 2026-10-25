@@ -21,7 +21,7 @@ export function registerLogDecision(server: McpServer, config: Config, deps: Dep
         rationale: z.string().optional(),
         alternatives: z.string().optional(),
       }),
-      annotations: { destructiveHint: false },
+      annotations: { openWorldHint: false, destructiveHint: false },
     },
     tool(config.maxResponseChars, async (input: NewDecision) => {
       await featureDir(config.root, input.feature);

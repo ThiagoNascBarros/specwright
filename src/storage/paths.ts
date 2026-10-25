@@ -23,8 +23,6 @@ export async function ensureRoot(root: string): Promise<string> {
   );
 }
 
-const firstSegment = (path: string) => path.split(sep)[0];
-
 /**
  * Real path of `target`, resolving symlinks of its nearest existing ancestor when it does not exist
  * yet, so a later `mkdir -p` cannot follow an escaping symlink (e.g. `.specify` → outside).
@@ -46,9 +44,9 @@ async function realpathOfNearest(target: string): Promise<string> {
 
 /**
  * Resolves `rel` inside the project root, following symlinks, and rejects anything that is
- * not under specs/ or .specify/ once resolved (NFR-6, FR-001). New files are checked through their parent.
+ * not under one of `prefixes` once resolved (NFR-6, FR-001, FR-021). New files are checked through their parent.
  */
-export async function resolveInside(root: string, rel: string): Promise<string> {
+export async function resolveWithin(root: string, rel: string, prefixes: readonly string[]): Promise<string> {
   // Treat backslashes as separators on every platform so "..\\x" cannot slip through on POSIX.
   const normalized = rel.replace(/\\/g, '/');
   if (isAbsolute(normalized) || /^[a-zA-Z]:/.test(normalized)) throw outside(rel);
@@ -57,6 +55,17 @@ export async function resolveInside(root: string, rel: string): Promise<string> 
   const real = await realpathOfNearest(target);
   const fromRoot = relative(realRoot, real);
   if (!fromRoot || fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) throw outside(rel);
-  if (!ALLOWED_TOP_LEVEL.includes(firstSegment(fromRoot) as never)) throw outside(rel);
+  if (!prefixes.some((p) => fromRoot === p || fromRoot.startsWith(`${p}${sep}`))) throw outside(rel);
   return real;
+}
+
+/** Resolves `rel` inside specs/ or .specify/ (FR-001). */
+export const resolveInside = (root: string, rel: string): Promise<string> => resolveWithin(root, rel, ALLOWED_TOP_LEVEL);
+
+/** True for a plain relative folder: no absolute/drive/backslash/`..`/hidden/node_modules segments, and not under specs/. */
+export function isSafeRelativeDir(rel: string): boolean {
+  if (rel.includes('\\') || rel.startsWith('/') || /^[A-Za-z]:/.test(rel)) return false;
+  const segments = rel.replace(/\/+$/, '').split('/');
+  if (segments.some((s) => s === '' || s.startsWith('.') || s === 'node_modules')) return false;
+  return segments[0] !== 'specs';
 }

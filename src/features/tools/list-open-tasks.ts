@@ -18,7 +18,7 @@ export function registerListOpenTasks(server: McpServer, config: Config) {
       description:
         'List the open tasks (T###) from tasks.md, for one feature or all valid ones, optionally for one user story such as US1. Use it to pick what to implement next.',
       inputSchema: z.object({ feature: featureIdSchema.optional(), story: storySchema.optional() }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ feature, story }: { feature?: string; story?: string }) => {
       if (feature) {

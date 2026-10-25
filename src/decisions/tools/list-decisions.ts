@@ -14,7 +14,7 @@ export function registerListDecisions(server: McpServer, config: Config) {
       description:
         'List recorded decisions, optionally for one feature or between two dates (inclusive, YYYY-MM-DD). Use it to check what was already decided before changing an approach.',
       inputSchema: z.object({ feature: featureIdSchema.optional(), from: dateSchema.optional(), to: dateSchema.optional() }),
-      annotations: { readOnlyHint: true },
+      annotations: { openWorldHint: false, readOnlyHint: true },
     },
     tool(config.maxResponseChars, async ({ feature, from, to }: { feature?: string; from?: string; to?: string }) => {
       if (from && to && from > to) throw new SpecwrightError('INVALID_INPUT', '"from" is later than "to".');

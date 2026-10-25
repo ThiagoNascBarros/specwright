@@ -1,6 +1,6 @@
 # Specwright
 
-MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as the source of truth for AI agents. It has 10 tools, and all three roadmap phases are done.
+MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as the source of truth for AI agents. It has 18 tools; the roadmap phases and the second brain (`010-second-brain`) are done.
 
 ## Language
 - All code, comments, docs, specs, ADRs, plans, commit messages and PR text are written in English.
@@ -33,5 +33,6 @@ MCP server (TypeScript, stdio) that keeps specs, decisions and project memory as
 ## Structure
 - `src/index.ts`: entry point. `src/server.ts`: composition root that registers every module.
 - `src/storage/`: paths, files, lock, concurrency, markdown, slug, text.
+- `src/graph/`: the knowledge graph (build, query, lint, exports, tools). `src/cli/`: the `graph` subcommand.
 - `src/features/`, `src/constitution/`, `src/decisions/`, `src/memory/`, `src/context/`: domain modules (TRD §3).
 - `tests/unit`, `tests/integration` (in-process client), `tests/contract` (stdio), `tests/perf`, `tests/load`.

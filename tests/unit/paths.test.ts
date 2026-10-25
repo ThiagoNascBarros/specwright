@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { symlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { resolveInside, ensureRoot } from '../../src/storage/paths.js';
+import { resolveInside, resolveWithin, isSafeRelativeDir, ensureRoot } from '../../src/storage/paths.js';
 import { makeProject } from '../helpers.js';
 
 async function setup() {
@@ -44,5 +44,28 @@ describe('FR-001: path guard', () => {
       code: 'NOT_INITIALIZED',
       hint: expect.stringContaining('specify init'),
     });
+  });
+});
+
+describe('FR-021: resolveWithin', () => {
+  it('FR-021: allows a path under an extra prefix', async () => {
+    const { root } = await makeProject({ 'docs/a.md': 'x' });
+    expect(await resolveWithin(root, 'docs/a.md', ['docs'])).toBe(join(root, 'docs/a.md'));
+  });
+
+  it('FR-021: refuses traversal, absolute, backslash and escaping symlink paths with PATH_OUTSIDE_ROOT', async () => {
+    const { root } = await makeProject({ 'docs/a.md': 'x', 'src/x.ts': 'x' });
+    await symlink(join(root, '..'), join(root, 'docs/link'));
+    for (const rel of ['docs/../src/x.ts', '/etc/x', '..\\x', 'docs/link/x.md']) {
+      await expect(resolveWithin(root, rel, ['docs'])).rejects.toMatchObject({ code: 'PATH_OUTSIDE_ROOT' });
+    }
+  });
+
+  it('FR-021: isSafeRelativeDir', () => {
+    const table: Array<[string, boolean]> = [
+      ['docs', true], ['docs/api/', true], ['', false], ['/abs', false], ['C:/x', false], ['a\\b', false],
+      ['../x', false], ['a/../b', false], ['.hidden', false], ['a/.git', false], ['node_modules', false], ['specs', false], ['specs/x', false],
+    ];
+    for (const [dir, ok] of table) expect(isSafeRelativeDir(dir), dir).toBe(ok);
   });
 });

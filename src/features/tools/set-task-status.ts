@@ -16,7 +16,7 @@ export function registerSetTaskStatus(server: McpServer, config: Config) {
       description:
         'Mark one task (T###) of tasks.md as done ([X]) or open, editing only its checkbox exactly like /speckit-implement. Call it after the task is implemented and verified.',
       inputSchema: z.object({ feature: featureIdSchema, task_id: taskIdSchema, done: z.boolean() }),
-      annotations: { idempotentHint: true, destructiveHint: false },
+      annotations: { openWorldHint: false, idempotentHint: true, destructiveHint: false },
     },
     tool(config.maxResponseChars, async ({ feature, task_id, done }: { feature: string; task_id: string; done: boolean }) => {
       const { feature: f, tasksRaw, tasksPath } = await readFeature(config.root, feature);

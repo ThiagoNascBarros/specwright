@@ -4,3 +4,4 @@ coverage/
 *.tmp
 .specify/memory/decisions/.lock/
 .superpowers/
+.specify/memory/relations/.lock/
