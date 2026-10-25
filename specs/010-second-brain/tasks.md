@@ -140,7 +140,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 - `contentHash(text: string): string`: the first 16 hex characters of the SHA-256 of `text` with CRLF/CR normalized to LF and the BOM removed.
 - `citedPaths(text: string): string[]`: every path cited in backticks or bare (the regexes move here from `context/files.ts`), unique, in order of first appearance. `extractPaths` in `context/files.ts` keeps its exact behavior by using it.
 
-- [ ] T005 [P] Write failing tests:
+- [X] T005 [P] Write failing tests:
   - `paths.test.ts`:
     - `FR-021: resolveWithin allows a path under an extra prefix ("docs/a.md" with ["docs"])`;
     - `FR-021: resolveWithin refuses "docs/../src/x.ts", "/etc/x", "..\\x" and a symlink docs/link → ../outside with PATH_OUTSIDE_ROOT`;
@@ -148,7 +148,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
   - `files.test.ts`: `listMarkdownTree` (nested folders, skips `.hidden/`, `node_modules/`, non-`.md` files and a symlinked dir; missing dir → `[]`); `writeAtomicIfChanged` (second identical write returns `false`, mtime unchanged); `statIfExists` (missing → `undefined`).
   - `hash.test.ts`: `contentHash("a\r\nb") === contentHash("a\nb")`, a length of 16, and a BOM that is ignored.
   - `text.test.ts`: `citedPaths` finds `` `src/a.ts` `` and bare `src/b/c.py`, ignores URLs, and dedupes.
-- [ ] T006 Implement the helpers. Refactor `context/files.ts` to use `citedPaths`, and keep `tests/unit/context.test.ts` green unchanged.
+- [X] T006 Implement the helpers. Refactor `context/files.ts` to use `citedPaths`, and keep `tests/unit/context.test.ts` green unchanged.
 - Verify: `npx vitest run tests/unit` is green.
 - Commit: `feat(storage): add resolveWithin, Markdown tree listing and content hashing` + `Refs: SW-10`
 
