@@ -7,7 +7,7 @@ import { connect, makeProject } from '../helpers.js';
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 
 describe('US6: Specwright follows Spec Kit itself', () => {
-  it('SC-005 / US6-AS1: the repository lists 9 valid features, 001-008 fully done', async () => {
+  it('SC-005 / US6-AS1: the repository lists its valid features, all but the one in progress fully done', async () => {
     // A snapshot copy, so the test never depends on (or changes) the live checkboxes beyond this check.
     const { root } = await makeProject();
     await cp(join(repo, 'specs'), join(root, 'specs'), { recursive: true });
@@ -24,11 +24,12 @@ describe('US6: Specwright follows Spec Kit itself', () => {
       '007-decision-list',
       '008-context-pack',
       '009-speckit-format',
+      '010-second-brain',
     ]);
     for (const f of data.features) {
       expect(f, f.id).toMatchObject({ valid: true });
       expect(f.issues, f.id).toBeUndefined();
-      if (f.id !== '009-speckit-format') expect(f.tasks.done, f.id).toBe(f.tasks.total);
+      if (f.id !== '010-second-brain') expect(f.tasks.done, f.id).toBe(f.tasks.total);
     }
     expect((await call('get_artifact', { artifact: 'constitution' })).data.content).toContain('Test-First (NON-NEGOTIABLE)');
     expect((await call('list_decisions')).data.decisions.length).toBeGreaterThanOrEqual(10);
