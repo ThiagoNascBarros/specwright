@@ -168,8 +168,8 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 `readDecisions` and `readMemories` use these with identical results.
 
-- [ ] T007 [P] Write failing unit tests for `parseDecision` (frontmatter fields, legacy `spec_id`, no frontmatter → `undefined`) and `parseMemory` (tags, missing title → `undefined`).
-- [ ] T008 Implement the exports and refactor the two repositories to use them. All existing decision and memory integration tests must stay green, unchanged.
+- [X] T007 [P] Write failing unit tests for `parseDecision` (frontmatter fields, legacy `spec_id`, no frontmatter → `undefined`) and `parseMemory` (tags, missing title → `undefined`).
+- [X] T008 Implement the exports and refactor the two repositories to use them. All existing decision and memory integration tests must stay green, unchanged.
 - Verify: `npm test` is green.
 - Commit: `refactor: export pure decision, note and spec-line parsers` + `Refs: SW-10`
 
