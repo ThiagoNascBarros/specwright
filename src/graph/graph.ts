@@ -15,6 +15,7 @@ export function incident(graph: Graph, id: string, opts: { includeAmbiguous?: bo
   return [...list('out'), ...list('in')].filter((x) => isUsable(x.edge, opts.includeAmbiguous ?? false));
 }
 
+// Excludes AMBIGUOUS edges: unconfirmed guesses must not make a node look connected (orphans, hubs).
 export function degree(graph: Graph, id: string, opts: { ignore?: readonly Relation[] } = {}): number {
   return incident(graph, id).filter((x) => !opts.ignore?.includes(x.edge.relation)).length;
 }

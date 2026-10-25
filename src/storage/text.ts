@@ -42,6 +42,10 @@ export function snippet(text: string, terms: string[], max = 200): string {
 const CODE_SPAN = /`([^`\s]+)`/g;
 // A bare path in prose, as Spec Kit tasks write them: "Create Album model in src/models/album.py".
 const BARE_PATH = /(?:^|\s)((?:[\w@.-]+\/)+[\w@.-]+\.[a-zA-Z0-9]{1,8})(?=[\s,;:)]|\.(?:\s|$)|$)/g;
+/** Feature id and item id patterns (FR/SC/US/T), shared with graph mentions. */
+export const FEATURE_ID_SOURCE = String.raw`(?:\d{3,}|\d{8}-\d{6})-[\p{L}\p{N}][\p{L}\p{N}_-]*`;
+export const ITEM_ID_SOURCE = String.raw`(?:(?:FR|SC)-\d{3,}|US\d+|T\d{3,})`;
+const QUALIFIED_ID = new RegExp(`^${FEATURE_ID_SOURCE}/${ITEM_ID_SOURCE}$`, 'u');
 const PATH_LIKE = /^(?:\.{0,2}\/)?[\w@.-]+(?:\/[\w@.-]+)*\.[a-zA-Z0-9]{1,8}$|^[\w@.-]+(?:\/[\w@.-]+)+\/?$/;
 
 /** Paths cited in backticks or bare in `text`, unique, in order of first appearance. Pure text work. */
@@ -49,5 +53,5 @@ export function citedPaths(text: string): string[] {
   const found: Array<[number, string]> = [];
   for (const m of text.matchAll(CODE_SPAN)) if (PATH_LIKE.test(m[1])) found.push([m.index, m[1]]);
   for (const m of text.replace(CODE_SPAN, (c) => ' '.repeat(c.length)).matchAll(BARE_PATH)) found.push([m.index + m[0].indexOf(m[1]), m[1]]);
-  return [...new Set(found.sort((a, b) => a[0] - b[0]).map(([, p]) => p))];
+  return [...new Set(found.sort((a, b) => a[0] - b[0]).map(([, p]) => p).filter((p) => !QUALIFIED_ID.test(p)))];
 }

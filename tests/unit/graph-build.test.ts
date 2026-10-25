@@ -56,6 +56,7 @@ describe('buildGraph', () => {
   it('FR-003: 002-sharing FR-001 references requirement:001-photo-albums/FR-003 (qualified mention)', () => {
     const g = buildGraph(fixtureFacts());
     expect(find(g, 'requirement:002-sharing/FR-001', 'references', 'requirement:001-photo-albums/FR-003')).toBeDefined();
+    expect(g.nodes.has('file:001-photo-albums/FR-003')).toBe(false);
   });
 
   it('FR-005: every edge has relation, confidence, score, path and line when known', () => {

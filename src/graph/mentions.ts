@@ -1,10 +1,12 @@
+import { FEATURE_ID_SOURCE, ITEM_ID_SOURCE } from '../storage/text.js';
+
 export type Mention =
   | { type: 'item' | 'story' | 'task'; id: string; feature?: string }
   | { type: 'feature'; id: string }
   | { type: 'decision'; id: string };
 
-const FEAT = String.raw`(?:\d{3,}|\d{8}-\d{6})-[\p{L}\p{N}][\p{L}\p{N}_-]*`;
-const ITEM = String.raw`(?:(?:FR|SC)-\d{3,}|US\d+|T\d{3,})`;
+const FEAT = FEATURE_ID_SOURCE;
+const ITEM = ITEM_ID_SOURCE;
 // Alternation order matters: a qualified `<feature>/<item>` must win over its bare feature token.
 const TOKEN = new RegExp(
   String.raw`(?<![\p{L}\p{N}_/.-])(?:(${FEAT})/(${ITEM})(?![\p{L}\p{N}_])|(${ITEM})(?![\p{L}\p{N}_])|(${FEAT})(?![\p{L}\p{N}_/]))`,

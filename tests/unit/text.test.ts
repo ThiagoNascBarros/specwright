@@ -24,4 +24,8 @@ describe('FR-021: citedPaths', () => {
     const text = 'See `src/a.ts` and src/b/c.py, also https://example.com/x/y.html and `src/a.ts` again.';
     expect(citedPaths(text)).toEqual(['src/a.ts', 'src/b/c.py']);
   });
+
+  it('FR-021: a qualified id like 001-photo-albums/FR-003 is not a path', () => {
+    expect(citedPaths('For `001-photo-albums/FR-003` and 002-x/T001 see `src/a.ts`.')).toEqual(['src/a.ts']);
+  });
 });
