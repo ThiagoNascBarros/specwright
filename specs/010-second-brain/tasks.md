@@ -214,7 +214,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Edge derivation" (the regexes) and § "Link resolution" (the parsing rules).
 
-- [ ] T011 [P] Write failing tests:
+- [X] T011 [P] Write failing tests:
   - mentions:
     - `FR-003: finds FR-003, SC-001, US2, T012 and qualified 006-memory/FR-003 (feature set)`;
     - `FR-003: "decision 0007" and "decisions 0009 and 0010" give 3 decision mentions`;
@@ -226,7 +226,7 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
     - `FR-004: http(s), mailto, #anchor-only and ![img](x.png) are ignored`;
     - `FR-004: links inside inline code are ignored`;
     - `FR-003: "- depends_on [[X]]" carries relation depends_on, and "- foo [[X]]" carries none`.
-- [ ] T012 Implement both files.
+- [X] T012 Implement both files.
 - Verify: `npx vitest run tests/unit/graph-mentions.test.ts tests/unit/graph-links.test.ts`.
 - Commit: `feat(graph): parse id mentions, wikilinks and Markdown links` + `Refs: SW-10`
 
