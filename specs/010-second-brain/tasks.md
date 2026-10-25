@@ -567,7 +567,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Tool contracts" (`query_graph`, `get_node`, `find_path`, conventions).
 
-- [ ] T036 [US1] Write failing integration tests on `copyFixture('brain')` (call `resetGraphCache()` in `afterEach`):
+- [X] T036 [US1] Write failing integration tests on `copyFixture('brain')` (call `resetGraphCache()` in `afterEach`):
   - `US1-AS1: query_graph "album sorting" (feature 001-photo-albums) includes task:001-photo-albums/T005, story:001-photo-albums/US2, requirement:001-photo-albums/FR-002, file:src/albums/sort.ts with implements/references/touches edges; used_tokens ≤ budget_tokens`;
   - `US1-AS2: get_node "0002" has out belongs_to/references/links_to/depends_on and in links_to from note:keep-ids-stable…`, asserting each exact tuple per the fixture;
   - `US1-AS3: find_path note:keep-ids-stable → requirement:001-photo-albums/FR-001 is identical on two calls`;
@@ -575,7 +575,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
   - `US1-AS5: NODE_AMBIGUOUS and NODE_NOT_FOUND are isError with code and hint`;
   - `FR-010: get_node read = { artifact: "spec", feature, section: <heading> } for FR-002`;
   - `FR-026: each tool returns byte-identical text on two calls in two server instances`.
-- [ ] T037 [US1] Implement the schemas, the three tools, `graph/index.ts` and the `server.ts` registration, and update the contract test as described under Files.
+- [X] T037 [US1] Implement the schemas, the three tools, `graph/index.ts` and the `server.ts` registration, and update the contract test as described under Files.
 - Verify: `npm test` is green (this includes the stdio contract).
 - Commit: `feat(graph): add query_graph, get_node and find_path` + `Refs: SW-10`
 
