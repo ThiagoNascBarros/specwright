@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { DECISION_FILE, DECISIONS_DIR } from '../decisions/repository.js';
 import { FEATURE_ID_PATTERN } from '../features/types.js';
 import { MEMORY_DIR } from '../memory/repository.js';
+import { mapLimit, READ_CONCURRENCY } from '../storage/concurrency.js';
 import { createExclusive, listMarkdown, listMarkdownTree, readTextIfExists, writeAtomic, writeAtomicIfChanged } from '../storage/files.js';
 import { withLock } from '../storage/lock.js';
 import { ALLOWED_TOP_LEVEL, resolveInside, resolveWithin } from '../storage/paths.js';
@@ -50,17 +51,17 @@ export async function discoverSources(root: string, include: readonly string[]):
     for (const n of await listMarkdownTree(await resolveWithin(root, folder, include))) candidates.push({ path: `${folder}/${n}`, kind: 'doc' });
   }
 
-  const sources: SourceFile[] = [];
-  for (const c of candidates) {
+  const stats = await mapLimit(candidates, READ_CONCURRENCY, async (c): Promise<SourceFile | undefined> => {
     try {
       const s = await stat(await resolveWithin(root, c.path, [...ALLOWED_TOP_LEVEL, ...include]));
-      if (s.isFile()) sources.push({ ...c, size: s.size, mtimeMs: s.mtimeMs });
+      return s.isFile() ? { ...c, size: s.size, mtimeMs: s.mtimeMs } : undefined;
     } catch (error) {
       const code = (error as { code?: string }).code;
       if (code !== 'ENOENT' && code !== 'PATH_OUTSIDE_ROOT') throw error;
+      return undefined;
     }
-  }
-  return sources;
+  });
+  return stats.filter((s): s is SourceFile => s !== undefined);
 }
 
 /** Reads one source through resolveWithin (specs/, .specify/ and the include folders). */
