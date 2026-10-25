@@ -917,11 +917,11 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 **Files:**
 - Modify: `src/server.ts` (`new McpServer({ name, version }, { instructions: SERVER_INSTRUCTIONS })`), every existing `src/*/tools/*.ts` annotation (plan.md § "Tool contracts" › "Changes to existing tools"), `tests/contract/server.test.ts`
 
-- [ ] T063 [US8] Write failing contract tests:
+- [X] T063 [US8] Write failing contract tests:
   - `US8-AS1 / FR-023: the initialize result's instructions are ≤ 1,200 chars and name query_graph, get_node and extraction_batch` (via `client.getInstructions()`, or the SDK's equivalent accessor);
   - `FR-029: every tool has annotations.openWorldHint === false`, read tools have `readOnlyHint: true`, and `save_relations`, `export_graph` and `set_task_status` have `destructiveHint: false`;
   - `FR-025 / SC-005: exactly the 18 tools of FR-025, ≤ 1,200 chars each, ≤ 16,000 in total, ≤ 2 sentences each`.
-- [ ] T064 [US8] Implement: pass the instructions and update the annotations.
+- [X] T064 [US8] Implement: pass the instructions and update the annotations.
 - Verify: `npm test` is green.
 - Commit: `feat(server): send agent instructions and mark tools as closed-world` + `Refs: SW-10`
 
