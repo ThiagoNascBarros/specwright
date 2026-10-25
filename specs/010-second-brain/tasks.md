@@ -428,15 +428,15 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Cache and refresh".
 
-- [ ] T025 Write failing tests:
+- [X] T025 Write failing tests:
   - `FR-006 / US5-AS1: after editing one note, adding one decision and deleting one note, the next loadGraph parses exactly 2 files (cacheStats) and its nodes/edges/diagnostics JSON equals a cache:"off" build`;
   - `FR-007 / US5-AS2: a second process, simulated by resetGraphCache with the snapshot on disk, reuses every unchanged file (parsed 0)`;
   - `FR-007: a corrupt cache.json or schema 0 is ignored and rewritten`;
   - `US5-AS3: cache "off" never reads or writes .specify/graph/cache.json`;
   - `FR-008: the first snapshot write creates .specify/graph/.gitignore containing "*", and an existing .gitignore is never overwritten`;
   - `FR-006: 20 concurrent loadGraph calls share one refresh`.
-- [ ] T026 Implement `repository.ts` (discovery order and filters per the plan; every read goes through `resolveWithin`).
-- [ ] T027 Implement `service.ts` (per-root state, in-flight sharing, snapshot handling, stderr logging once per process on snapshot write failure).
+- [X] T026 Implement `repository.ts` (discovery order and filters per the plan; every read goes through `resolveWithin`).
+- [X] T027 Implement `service.ts` (per-root state, in-flight sharing, snapshot handling, stderr logging once per process on snapshot write failure).
 - Verify: `npx vitest run tests/unit/graph-repository.test.ts tests/integration/graph-cache.test.ts`.
 - Commit: `feat(graph): load the graph incrementally with a disk snapshot` + `Refs: SW-10`
 
