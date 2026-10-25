@@ -674,7 +674,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Create: `tests/load/graph.load.test.ts`
 - Read: `tests/load/stdio-client.ts` (reuse `startServer(root)`)
 
-- [ ] T044 [US2] Write `US2-AS5: two stdio server processes each save 50 distinct relations into the same project ledger concurrently; afterwards the ledger parses with 0 invalid rows and has all 100 relations` (plus the fixture's own). It should pass against the implementation of Task 20. If it fails, fix `writeLedgerChanges` (Task 20's code) in this task, with the failing evidence recorded.
+- [X] T044 [US2] Write `US2-AS5: two stdio server processes each save 50 distinct relations into the same project ledger concurrently; afterwards the ledger parses with 0 invalid rows and has all 100 relations` (plus the fixture's own). It should pass against the implementation of Task 20. If it fails, fix `writeLedgerChanges` (Task 20's code) in this task, with the failing evidence recorded.
 - Verify: `npm run test:load` is green.
 - Commit: `test(graph): cover concurrent ledger writes across processes` + `Refs: SW-10`
 
