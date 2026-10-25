@@ -1,5 +1,7 @@
 import type { Config } from '../config.js';
 import { buildGraph } from './build.js';
+import { detectCommunities } from './community.js';
+import type { Communities } from './community.js';
 import { factsOf } from './facts.js';
 import { discoverSources, readSnapshot, readSource, writeSnapshot } from './repository.js';
 import type { Snapshot } from './repository.js';
@@ -7,7 +9,7 @@ import { EXTRACTOR_VERSION, SNAPSHOT_SCHEMA } from './types.js';
 import type { FileFacts, Graph } from './types.js';
 
 type Entry = { size: number; mtimeMs: number; facts: FileFacts };
-interface CacheState { facts: Map<string, Entry>; loaded: boolean; version: number; graph?: Graph; inflight?: Promise<Graph>; stats: { parsed: number; reused: number } }
+interface CacheState { facts: Map<string, Entry>; loaded: boolean; version: number; graph?: Graph; communities?: { version: number; value: Communities }; inflight?: Promise<Graph>; stats: { parsed: number; reused: number } }
 
 const states = new Map<string, CacheState>();
 let loggedWriteFailure = false;
@@ -35,6 +37,7 @@ async function refresh(config: Config, state: CacheState): Promise<Graph> {
   let parsed = 0;
   for (const src of sources) {
     const old = reuse ? state.facts.get(src.path) : undefined;
+    // shortcut: a same-size edit within mtime granularity is missed, upgrade to a content hash if stale facts are ever seen
     if (old && old.size === src.size && old.mtimeMs === src.mtimeMs) next.set(src.path, old);
     else {
       next.set(src.path, { size: src.size, mtimeMs: src.mtimeMs, facts: factsOf(src, await readSource(root, src.path, include)) });
@@ -46,6 +49,7 @@ async function refresh(config: Config, state: CacheState): Promise<Graph> {
   state.stats = { parsed, reused: next.size - parsed };
   if (!changed && state.graph && reuse) return state.graph;
   state.graph = buildGraph([...next.values()].map((e) => e.facts), ++state.version);
+  state.communities = undefined;
   if (cache === 'disk' && changed) {
     const snapshot: Snapshot = { schema: SNAPSHOT_SCHEMA, extractor: EXTRACTOR_VERSION, files: Object.fromEntries(next) };
     try {
@@ -58,9 +62,18 @@ async function refresh(config: Config, state: CacheState): Promise<Graph> {
   return state.graph;
 }
 
+/** Communities of a graph from loadGraph, memoized on its CacheState by graph.version (plan.md "Cache and refresh"). */
+export function communitiesOf(graph: Graph): Communities {
+  const owner = [...states.values()].find((s) => s.graph === graph);
+  if (!owner) return detectCommunities(graph);
+  if (owner.communities?.version !== graph.version) owner.communities = { version: graph.version, value: detectCommunities(graph) };
+  return owner.communities.value;
+}
+
 /** For tests: forget every root's in-memory state (simulates a new process). */
 export function resetGraphCache(): void {
   states.clear();
+  loggedWriteFailure = false;
 }
 
 /** For tests: parsed and reused file counts of the last refresh of `root`. */
