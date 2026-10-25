@@ -1,8 +1,10 @@
 import { scanLines, type ScannedLine } from '../storage/markdown.js';
 import type { Task } from './types.js';
 
-/** `- [ ] T012 [P] [US1] description`; labels are optional and in this order (Spec Kit's tasks template). */
-export const TASK_LINE = /^(\s*[-*] \[)( |x|X)(\] )(T\d{3,})(?=\s|$)( \[P\])?( \[(US\d+)\])?(?:\s+(.*?))?\s*$/;
+/** `- [ ] T012 [P] [US1] description`. Group 1 is the prefix up to the checkbox mark, used by the editor. */
+export const TASK_LINE = /^(\s*[-*] \[)( |x|X)(\] )(T\d{3,})(?=\s|$)(.*)$/;
+// Labels after the id, in any order and case, separated by any whitespace (agent-written variants).
+const LABEL = /^\s+\[(P|US\d+)\]/i;
 const CHECKBOX = /^\s*[-*] \[( |x|X)\]/;
 const PHASE = /^##\s+Phase\s+\d+:\s*(.+?)\s*$/;
 const H2 = /^##\s/;
@@ -41,7 +43,15 @@ export function scanTasks(raw: string): { lines: TaskLine[]; warnings: string[] 
     else if (H2.test(text)) phase = '';
     const m = TASK_LINE.exec(text);
     if (m) {
-      found.push({ index, task: { id: m[4], done: m[2] !== ' ', parallel: m[5] !== undefined, story: m[7], phase, text: m[8] ?? '' } });
+      let rest = m[5];
+      let parallel = false;
+      let story: string | undefined;
+      for (let l = LABEL.exec(rest); l; l = LABEL.exec(rest)) {
+        if (l[1].toUpperCase() === 'P') parallel = true;
+        else story = l[1].toUpperCase();
+        rest = rest.slice(l[0].length);
+      }
+      found.push({ index, task: { id: m[4], done: m[2] !== ' ', parallel, story, phase, text: rest.trim() } });
     } else if (CHECKBOX.test(text)) {
       warnings.push(`task without id ignored: "${text.trim()}"`);
     }
