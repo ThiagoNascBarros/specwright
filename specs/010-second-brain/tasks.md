@@ -243,13 +243,13 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 - `unitContent(raw: string, unit: Pick<Unit, 'id' | 'path' | 'section'>): string | undefined` returns the same text that was hashed.
 - `tokensOf(text: string): number` is `Math.ceil(text.length / 4)`. `estimateTokens(value: unknown): number` is `tokensOf(JSON.stringify(value))`.
 
-- [ ] T013 [P] Write failing tests:
+- [X] T013 [P] Write failing tests:
   - `FR-013: one unit per ## section with stable ids and hashes`;
   - `FR-013: duplicate headings get -2`;
   - `FR-013: a file without sections is one unit`;
   - `FR-013: HTML comments do not change the hash`;
   - `SC-002: editing one section changes only that unit's hash`.
-- [ ] T014 Implement.
+- [X] T014 Implement.
 - Verify: `npx vitest run tests/unit/graph-units.test.ts`.
 - Commit: `feat(graph): split sources into hashed extraction units` + `Refs: SW-10`
 
