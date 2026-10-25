@@ -29,11 +29,13 @@ function splitRow(line: string): string[] {
   const body = line.trim().replace(/^\|/, '');
   const cells: string[] = [];
   let cur = '';
+  let closed = false;
   for (let i = 0; i < body.length; i++) {
+    closed = false;
     if (body[i] === '\\' && i + 1 < body.length) cur += body[i] + body[++i];
-    else if (body[i] === '|') { cells.push(cur.trim()); cur = ''; } else cur += body[i];
+    else if (body[i] === '|') { cells.push(cur.trim()); cur = ''; closed = true; } else cur += body[i];
   }
-  if (cur.trim() !== '') cells.push(cur.trim()); // text after the last pipe; a closing pipe leaves nothing
+  if (!closed) cells.push(cur.trim()); // no closing pipe: the text after the last pipe is a cell, even if empty
   return cells;
 }
 
@@ -146,5 +148,6 @@ export function applyLedgerChanges(raw: string | undefined, scope: string, chang
       }
     }
   }
+  if (raw === undefined && lines.at(-2) === '') lines.splice(-2, 1); // one newline after the last row
   return { text: lines.join(eol), stats };
 }

@@ -107,4 +107,25 @@ describe('graph: ledger', () => {
     expect(parseLedger('project.md', text).coverage.map((c) => c.unit)).toEqual(['u']);
     expect(text).toContain('| unit | hash | version | date |\n|---|---|---|---|\n| u | h | 1 | d |');
   });
+
+  it('FR-015: a new ledger ends with exactly one newline after the last row', () => {
+    const { text } = applyLedgerChanges(undefined, 'project', { coverage: [{ unit: 'u', hash: 'h', version: 1, date: 'd' }] });
+    expect(text.endsWith('| u | h | 1 | d |\n')).toBe(true);
+    expect(applyLedgerChanges(undefined, 'project', {}).text.endsWith('|---|---|---|---|\n')).toBe(true);
+  });
+
+  it('FR-019: an empty last cell parses, with or without a closing pipe', () => {
+    const head = '---\nscope: p\n---\n## Concepts\n\n| id | label | summary |\n|---|---|---|\n';
+    expect(parseLedger('p.md', head + '| c:1 | L |  |\n').concepts[0]).toMatchObject({ id: 'c:1', summary: '' });
+    expect(parseLedger('p.md', head + '| c:1 | L | S').concepts[0]).toMatchObject({ summary: 'S' });
+    expect(parseLedger('p.md', head + '| c:1 | L |\n').invalid.length).toBe(1);
+  });
+
+  it('FR-015: a missing section is appended at the end of the file', () => {
+    const raw = '---\nscope: p\n---\n# Relations: p\n\n## Concepts\n\n| id | label | summary |\n|---|---|---|\n';
+    const { text, stats } = applyLedgerChanges(raw, 'p', { coverage: [{ unit: 'u', hash: 'h', version: 1, date: 'd' }] });
+    expect(stats.coverage.added).toBe(1);
+    expect(text.startsWith(raw)).toBe(true);
+    expect(text.slice(raw.length)).toBe('\n## Coverage\n\n| unit | hash | version | date |\n|---|---|---|---|\n| u | h | 1 | d |\n');
+  });
 });
