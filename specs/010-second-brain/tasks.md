@@ -354,13 +354,13 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Link resolution".
 
-- [ ] T021 [P] Write failing tests:
+- [X] T021 [P] Write failing tests:
   - `FR-004: wikilink resolves by exact path, then unique suffix, then unique basename, case-insensitive with .md optional`;
   - `FR-004: two notes named x.md in different folders → ambiguous with both paths`;
   - `FR-004: a relative Markdown link resolves from the linking file's folder`;
   - `FR-004: ../outside-root → ignore; unknown .md → missing; ../src/a.ts → file`;
   - `FR-001: factsOf dispatches each SourceKind and ledger concept rows become concept nodes`.
-- [ ] T022 Implement.
+- [X] T022 Implement.
 - Verify: `npx vitest run tests/unit/graph-link-index.test.ts tests/unit/graph-facts.test.ts`.
 - Commit: `feat(graph): resolve links and dispatch per-file facts` + `Refs: SW-10`
 
