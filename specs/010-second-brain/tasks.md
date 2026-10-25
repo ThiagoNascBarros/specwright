@@ -112,13 +112,13 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Configuration".
 
-- [ ] T003 [P] Write failing tests in `tests/unit/config.test.ts`:
+- [X] T003 [P] Write failing tests in `tests/unit/config.test.ts`:
   - `FR-021: graph defaults to { include: [], cache: "disk", vaultDir: ".specify/graph/vault" } when absent`;
   - `FR-021: graph.include accepts "docs" and "notes/vault/" (normalized to "notes/vault")`;
   - `FR-021: graph.include rejects "../x", "/abs", "C:/x", ".obsidian", "specs", ".specify/x", "a/node_modules", "a/.git"` (each throws `Invalid …specwright.json`);
   - `FR-007: graph.cache accepts disk|memory|off and rejects "redis"`;
   - `FR-021: graph.vaultDir accepts ".specify/graph/vault" and "brain", and rejects "specs/x", "../x" and ".obsidian"`.
-- [ ] T004 Implement `Config.graph` parsing and validation in `src/config.ts`, keeping the existing `maxResponseChars` behavior and error style. Update `connect()` in `tests/helpers.ts` so the default config includes `graph: DEFAULT_GRAPH_CONFIG`. Also update every other place that builds a `Config` literal (grep `maxResponseChars:` in `tests/`).
+- [X] T004 Implement `Config.graph` parsing and validation in `src/config.ts`, keeping the existing `maxResponseChars` behavior and error style. Update `connect()` in `tests/helpers.ts` so the default config includes `graph: DEFAULT_GRAPH_CONFIG`. Also update every other place that builds a `Config` literal (grep `maxResponseChars:` in `tests/`).
 - Verify: `npx vitest run tests/unit/config.test.ts`, then `npm run typecheck`.
 - Commit: `feat(server): add the graph section to the config` + `Refs: SW-10`
 
