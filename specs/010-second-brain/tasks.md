@@ -521,14 +521,14 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 
 **Read first:** plan.md § "Query algorithm" and § "Tool contracts" › `query_graph`.
 
-- [ ] T032 [P] [US1] Write failing tests:
+- [X] T032 [P] [US1] Write failing tests:
   - `FR-009: BFS distances and tree edges; the hub guard stops expansion through a node of degree ≥ max(50, p99) unless it is a seed`;
   - `FR-009: AMBIGUOUS edges are skipped unless includeAmbiguous`;
   - `FR-009: DFS respects depth`;
   - `US1-AS4: a 200-token budget keeps every seed, reports omitted counts and needed_budget_tokens, and used_tokens ≤ budget`;
   - `FR-027: estimate = ceil(JSON chars / 4)`;
   - `US1-AS1 (unit): on the brain graph, "album sorting" with feature 001-photo-albums returns T005, US2, FR-002, file:src/albums/sort.ts and the implements/references/touches tuples`.
-- [ ] T033 [US1] Implement.
+- [X] T033 [US1] Implement.
 - Verify: `npx vitest run tests/unit/graph-traverse.test.ts tests/unit/graph-budget.test.ts tests/unit/graph-query.test.ts`.
 - Commit: `feat(graph): traverse from seeds and fit answers to a token budget` + `Refs: SW-10`
 
