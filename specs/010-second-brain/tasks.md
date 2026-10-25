@@ -781,7 +781,7 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Create: `tests/perf/graph.perf.test.ts`
 - Modify: `tests/load/graph.load.test.ts`
 
-- [ ] T052 [US5] Extend `speckitDataset(features, notes, decisions, opts?)` with `opts.links`. When it is set:
+- [X] T052 [US5] Extend `speckitDataset(features, notes, decisions, opts?)` with `opts.links`. When it is set:
   - each decision body mentions `FR-001` and links `[[m-<i>]]` to a note;
   - each note mentions `<feature id>/FR-002`;
   - each tasks.md has one `[US1]` task citing `FR-003`.
@@ -793,8 +793,8 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
   - `SC-003: first graph_report < 1.5 s, repeated < 300 ms`.
 
   All of these use `factor` for CI.
-- [ ] T053 [US5] In `tests/load/graph.load.test.ts`, add `SC-003: 2,000 features + 5,000 notes cold build < 6 s without errors`.
-- [ ] T054 [US5] Run `npm run test:load`. If any budget fails, profile with `--cpu-prof`, fix the hot function (likely the inverted index, the link index or Louvain aggregation) without changing outputs, and re-run. Copy the measured numbers into the scratch notes for `docs/tdd/phase-5.md`.
+- [X] T053 [US5] In `tests/load/graph.load.test.ts`, add `SC-003: 2,000 features + 5,000 notes cold build < 6 s without errors`.
+- [X] T054 [US5] Run `npm run test:load`. If any budget fails, profile with `--cpu-prof`, fix the hot function (likely the inverted index, the link index or Louvain aggregation) without changing outputs, and re-run. Copy the measured numbers into the scratch notes for `docs/tdd/phase-5.md`.
 - Verify: `npm run test:load` is green.
 - Commit: `test(graph): add performance and scale budgets for the graph` + `Refs: SW-10` (and `perf(graph): …` for any optimization)
 
