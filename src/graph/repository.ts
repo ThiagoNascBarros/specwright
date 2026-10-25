@@ -4,7 +4,10 @@ import { DECISION_FILE, DECISIONS_DIR } from '../decisions/repository.js';
 import { FEATURE_ID_PATTERN } from '../features/types.js';
 import { MEMORY_DIR } from '../memory/repository.js';
 import { createExclusive, listMarkdown, listMarkdownTree, readTextIfExists, writeAtomic } from '../storage/files.js';
+import { withLock } from '../storage/lock.js';
 import { ALLOWED_TOP_LEVEL, resolveInside, resolveWithin } from '../storage/paths.js';
+import { applyLedgerChanges, ledgerPath } from './ledger.js';
+import type { LedgerChanges } from './ledger.js';
 import { EXTRACTOR_VERSION, GRAPH_DIR, RELATIONS_DIR, SNAPSHOT_SCHEMA } from './types.js';
 import type { FileFacts, SourceFile, SourceKind } from './types.js';
 
@@ -81,4 +84,25 @@ export async function ensureGraphDir(root: string): Promise<void> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
   }
+}
+
+let ledgerQueue: Promise<unknown> = Promise.resolve();
+
+/** Merges changes into a scope's ledger under the directory lock; writes only when the text changed (plan.md "Ledger format"). */
+export function writeLedgerChanges(root: string, scope: string, changes: LedgerChanges): Promise<{ path: string; written: boolean; stats: ReturnType<typeof applyLedgerChanges>['stats'] }> {
+  const run = ledgerQueue.then(async () => {
+    const dir = await resolveInside(root, RELATIONS_DIR);
+    await mkdir(dir, { recursive: true });
+    const path = ledgerPath(scope);
+    const file = await resolveInside(root, path);
+    return withLock(`${dir}/.lock`, async () => {
+      const raw = await readTextIfExists(file);
+      const { text, stats } = applyLedgerChanges(raw, scope, changes);
+      const written = text !== raw;
+      if (written) await writeAtomic(file, text);
+      return { path, written, stats };
+    });
+  });
+  ledgerQueue = run.catch(() => undefined);
+  return run;
 }

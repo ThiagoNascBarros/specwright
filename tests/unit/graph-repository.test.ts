@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { symlink, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { makeProject, specMd } from '../helpers.js';
-import { discoverSources, ensureGraphDir, readSnapshot, readSource, writeSnapshot } from '../../src/graph/repository.js';
+import { discoverSources, ensureGraphDir, readSnapshot, readSource, writeLedgerChanges, writeSnapshot } from '../../src/graph/repository.js';
 
 describe('graph repository', () => {
   it('FR-006: discoverSources lists sources in plan order with kinds, skipping non-sources', async () => {
@@ -47,5 +47,19 @@ describe('graph repository', () => {
     await writeFile(join(root, '.specify/graph/.gitignore'), 'mine\n');
     await ensureGraphDir(root);
     expect(await readFile(join(root, '.specify/graph/.gitignore'), 'utf8')).toBe('mine\n');
+  });
+});
+
+describe('graph repository: ledger writes', () => {
+  it('FR-015: writeLedgerChanges creates the file, then a second identical call reports written=false', async () => {
+    const { root } = await makeProject();
+    const changes = { relations: [{ source: 'decision:0001', relation: 'uses', target: 'note:x', confidence: 'INFERRED' as const, score: 0.8, evidence: '', date: '2026-10-24' }] };
+    const first = await writeLedgerChanges(root, 'project', changes);
+    expect(first.written).toBe(true);
+    expect(first.path).toBe('.specify/memory/relations/project.md');
+    expect(await readFile(join(root, first.path), 'utf8')).toContain('| decision:0001 | uses | note:x | INFERRED | 0.8 |');
+    const second = await writeLedgerChanges(root, 'project', changes);
+    expect(second.written).toBe(false);
+    expect(second.stats.relations).toEqual({ added: 0, updated: 0, unchanged: 1 });
   });
 });
