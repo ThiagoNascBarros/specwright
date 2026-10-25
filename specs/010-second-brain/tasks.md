@@ -82,12 +82,12 @@ These five conditions are implied by the spec but are easy to miss. Each has a t
 
 **Read first:** plan.md § "Fixture: brain". The ids, words and links there are exact: later tests depend on them.
 
-- [ ] T001 Create the fixture project in `tests/fixtures/brain/`, exactly as plan.md § "Fixture: brain" describes, in Spec Kit template shape:
+- [X] T001 Create the fixture project in `tests/fixtures/brain/`, exactly as plan.md § "Fixture: brain" describes, in Spec Kit template shape:
   - `specs/001-photo-albums/{spec.md,plan.md,tasks.md}` and `specs/002-sharing/{spec.md,tasks.md}`;
   - `.specify/memory/constitution.md`, 2 decisions, 2 notes, `.specify/memory/relations/project.md` (in the ledger format of plan.md § "Ledger format"), and `docs/adr/0001-storage.md`.
 
   Check that decision 0001 contains neither "album" nor "sorting" (US8-AS2 depends on it).
-- [ ] T002 Add `.specify/memory/relations/.lock/` to `.gitignore`. Then add a smoke test `tests/integration/graph-fixture.test.ts` › `it('fixture: brain lists 2 valid features without issues')`: `copyFixture('brain')`, then `list_features`, and expect the ids `['001-photo-albums', '002-sharing']`, both `valid: true`, and no `issues`.
+- [X] T002 Add `.specify/memory/relations/.lock/` to `.gitignore`. Then add a smoke test `tests/integration/graph-fixture.test.ts` › `it('fixture: brain lists 2 valid features without issues')`: `copyFixture('brain')`, then `list_features`, and expect the ids `['001-photo-albums', '002-sharing']`, both `valid: true`, and no `issues`.
 - Verify: `npx vitest run tests/integration/graph-fixture.test.ts` passes. `npm test` is green.
 - Commit: `test(graph): add the brain fixture project` + `Refs: SW-10`
 
