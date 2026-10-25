@@ -724,11 +724,11 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - Modify: `src/graph/index.ts`, `tests/contract/server.test.ts`
 - Test: `tests/integration/graph-report.test.ts`
 
-- [ ] T047 [US3] Write failing tests:
+- [X] T047 [US3] Write failing tests:
   - `US3-AS1: counts by kind, relation and confidence, god nodes, communities, surprising and questions are present on the brain fixture`, plus `stats.extraction` = units, pending and covered;
   - `US3-AS2: the report is byte-identical in a new server instance (resetGraphCache between)`;
   - `US3-AS3: with community 0 it returns members (paged) and bridges, and an unknown id → INVALID_INPUT with hint`.
-- [ ] T048 [US3] Implement `graph_report` per plan.md § "Tool contracts" › `graph_report` and register it.
+- [X] T048 [US3] Implement `graph_report` per plan.md § "Tool contracts" › `graph_report` and register it.
 - Verify: `npm test` is green.
 - Commit: `feat(graph): add graph_report` + `Refs: SW-10`
 
