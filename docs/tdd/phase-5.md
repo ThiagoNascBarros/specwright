@@ -67,7 +67,8 @@ The first `graph_report` is close to its budget: about 1.0 s of it is parsing th
 
 - **SC-001 (partial).** `query_graph` at `budget_tokens: 1500` returns about 1,490 tokens for most questions, so "3 times cheaper than the files that hold the nodes" holds only when the expected nodes sit in large files. Three questions pass (token estimate budget 5.1×, spec kit format vocabulary 4.6×, linear response truncation 3.1×). The other candidates were below 3× (lock decision numbering ~2.8×, context pack budget ~2.5×). Two are still missing.
 - **Fixed in the course of T067.** `docs/02-trd.md` linked `../SECURITY.md`, which lies outside the graph's read areas, so `lint_memory` reported it broken. The link is now plain text.
-- **Governance (Task 34).** The constitution is amended to 2.0.0; the PRD §7, §8, §12 and FR-12..FR-19 rows, and the TRD §1, §3, §5, §7, §8, §10, §13 updates are still open.
+- **Governance (Task 34).** The constitution is amended to 2.0.0. PRD v1.2 (FR-12..FR-19, NFR-3/6/7, §7, §8, §10, §12) and TRD v2.1 (§1–§3, §5, §6.7–§6.8, §7–§10, §13, §14) were updated on 2026-10-25.
+- **SC-001 and the TRD.** The "token estimate budget" question reaches `artifact:009-speckit-format/research` only through `docs/02-trd.md`. The TRD's degree must stay below the hub threshold of 50, or `query_graph` stops expanding it and the dogfood test fails. It is at 49 after v2.1, so new backticked paths in the TRD can break SC-001.
 - **Spec status.** `specs/010-second-brain/spec.md` stays `Draft` until SC-001 and the open governance sections are closed.
 - **Decisions.** The `log_decision` records (T076) and the `check_against_spec` run (T075) were not executed in this pass.
 - **Known issue (outside this feature).** `respond()` trims the first array field to zero for a spec as large as this one; `respond()` is unchanged, as the plan requires.

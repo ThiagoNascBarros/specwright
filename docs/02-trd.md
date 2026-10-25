@@ -2,13 +2,13 @@
 id: TRD-001
 title: Specwright — Technical Requirements Document
 status: accepted
-version: 2.0
+version: 2.1
 implements: PRD-001
 ---
 
 # TRD-001 — Specwright
 
-Explains **how** [PRD-001](01-prd.md) is built. Version 2.0 adopts GitHub Spec Kit's file format. The design of that change is in the feature [`specs/009-speckit-format/`](../specs/009-speckit-format/) (spec, plan, research, data model and contracts).
+Explains **how** [PRD-001](01-prd.md) is built. Version 2.0 adopts GitHub Spec Kit's file format; its design is in [`specs/009-speckit-format/`](../specs/009-speckit-format/). Version 2.1 adds the knowledge graph (`graph/`) and the `graph` CLI (`cli/`); their design is in the [second brain feature](../specs/010-second-brain/) (spec, plan and research).
 
 Decisions are recorded in two places:
 - ADRs in [`adr/`](adr/) cover the decisions taken before the server could record its own;
@@ -24,23 +24,25 @@ It reads the files that **Spec Kit** (v1.2.x) writes in the target repository:
 - `specs/NNN-name/`;
 - `.specify/memory/constitution.md`.
 
-It writes only `tasks.md` checkboxes and its own memory in `.specify/memory/`. Files are **re-read on every call**, so no state can go stale.
+It also reads the Markdown folders listed in the graph's `include` setting, read-only.
+
+It writes only `tasks.md` checkboxes, its own memory in `.specify/memory/`, derived files in the git-ignored graph folder under `.specify/`, and the Obsidian vault that `export_graph` writes to the `vaultDir` folder. Files are **re-read on every call**. The graph keeps a derived cache, but every call checks it against each file's size and modification time, so no state can go stale (constitution IV).
 
 ```
 MCP client (agent)
         │ stdio / JSON-RPC
         ▼
- src/index.ts ── loads config, connects stdio
+ src/index.ts ── loads config; `graph <cmd>` → cli/ (prints JSON, exits), otherwise connects stdio
         │
- src/server.ts ── composition root: registers every module's tools
+ src/server.ts ── composition root: registers every module's tools and sends `instructions`
         │
- ┌──────┬──────────────┬───────────┬──────────┬──────────┐
- features/ constitution/ decisions/  memory/   context/     (modules)
- └──────┴───────┬──────┴───────────┴──────────┴──────────┘
+ ┌──────┬──────────────┬───────────┬──────────┬──────────┬────────┐
+ features/ constitution/ decisions/  memory/   context/    graph/     (modules)
+ └──────┴───────┬──────┴───────────┴──────────┴──────────┴────────┘
                 ▼
             storage/  ── the only layer that touches the disk
                 ▼
- <project>/specs/NNN-name/*  and  <project>/.specify/{specwright.json, memory/}
+ <project>/specs/NNN-name/*, <project>/.specify/{specwright.json, memory/, graph/}, graph.include folders
 ```
 
 ## 2. Global constraints
@@ -50,11 +52,15 @@ MCP client (agent)
 - Development dependencies: `typescript`, `vitest`, `@types/node` (major pinned to the Node floor) and `@modelcontextprotocol/client` (v2). `tsc --noEmit && tsc -p tests` is the type gate.
 - Forbidden in the server:
   - network access, `child_process` and LLM calls;
-  - reads outside `specs/` and `.specify/`;
-  - writes other than `tasks.md` checkboxes and `.specify/memory/**`.
+  - reads outside `specs/`, `.specify/` and the graph's `include` folders;
+  - writes other than `tasks.md` checkboxes, `.specify/memory/**`, the graph folder under `.specify/` and the `vaultDir` folder (by `export_graph` only);
+  - writing to stdout in server mode. Only the `graph` CLI subcommand prints to stdout, and it never starts the server.
 - Tool names are `snake_case` English and follow Spec Kit's vocabulary. Errors carry a stable `code`.
 - Every tool returns compact JSON in one text block. A listing is an object with one array field (decision 0001).
 - 18 tools in total; no two overlap (PRD NFR-2, constitution III).
+- Context budgets (PRD NFR-3): each description ≤ 2 sentences, each entry of the tool listing ≤ 1,200 characters, the whole listing ≤ 16,000 characters, server `instructions` ≤ 1,200 characters.
+- Every tool declares `openWorldHint: false`. Read tools declare `readOnlyHint: true`; write tools declare `destructiveHint: false`, plus `idempotentHint: true` when a repeat changes nothing.
+- Graph responses are byte-identical for the same files and arguments: no time, process or file-system order leaks into them.
 
 ## 3. Code structure
 
@@ -64,9 +70,10 @@ Each module separates its entities, its disk access, its pure logic and its tool
 src/
 ├── index.ts  server.ts  config.ts  deps.ts  errors.ts
 ├── storage/              # no domain knowledge
-│   ├── paths.ts          # ensureRoot, resolveInside (+ specs/.specify allowlist)
-│   ├── files.ts          # readTextIfExists, listMarkdown, writeAtomic, createExclusive
-│   ├── lock.ts  concurrency.ts  slug.ts  text.ts
+│   ├── paths.ts          # ensureRoot, resolveInside / resolveWithin (allowlists), isSafeRelativeDir
+│   ├── files.ts          # readTextIfExists, listMarkdown(Tree), writeAtomic(IfChanged), createExclusive
+│   ├── hash.ts           # contentHash
+│   ├── lock.ts  concurrency.ts  slug.ts  text.ts   # text.ts also holds citedPaths
 │   └── markdown.ts       # parseDocument, stripComments, scanLines, normalizeKey, listItems
 ├── features/             # Spec Kit features (replaces v0.1.0 specs/)
 │   ├── types.ts          # Feature, Specification, UserStory, Item, Task, DiffSummary
@@ -83,7 +90,21 @@ src/
 ├── constitution/         # read-only: types, parser, repository
 ├── decisions/            # types, repository, tools/{log-decision,list-decisions}
 ├── memory/               # types, repository, search, tools/{save-memory,search-memory}
-└── context/              # types, estimate, candidates, packer, files, tools/pack-context
+├── context/              # types, estimate, candidates, packer, files, graph-boost, tools/pack-context
+├── graph/                # knowledge graph
+│   ├── types.ts  ids.ts  schemas.ts  instructions.ts
+│   ├── mentions.ts  links.ts  units.ts           # per-line parsing and extraction units
+│   ├── facts.ts  facts-feature.ts  facts-memory.ts  ledger.ts   # per-file facts
+│   ├── link-index.ts  build.ts  graph.ts         # buildGraph(facts[]) → Graph
+│   ├── node-ref.ts  search.ts  traverse.ts  budget.ts  query.ts  path.ts
+│   ├── community.ts  analyze.ts                  # Louvain, hubs, surprising connections, questions
+│   ├── extraction.ts  relations.ts  lint.ts
+│   ├── mermaid.ts  export-json.ts  export-report.ts  export-obsidian.ts
+│   ├── repository.ts     # the module's only disk access: sources, snapshot, ledgers, exports
+│   ├── service.ts        # loadGraph (cache + incremental refresh), communitiesOf
+│   └── tools/            # query-graph, get-node, find-path, graph-report, extraction-batch,
+│                         # save-relations, lint-memory, export-graph
+└── cli/                  # args.ts (parseGraphArgs), graph.ts (runGraphCli → exit code)
 ```
 
 **Dependency rules.**
@@ -91,7 +112,9 @@ src/
 - A module may call another module's public repository or pure functions, but never its tools (decision 0003):
   - `decisions` uses `features` to check that a feature exists;
   - `memory` uses `decisions` and `constitution`;
-  - `context` uses all four.
+  - `context` uses all four, and `graph` for `pack_context`'s `graph: true`;
+  - `graph` uses the pure parsers of `features`, `constitution`, `decisions` and `memory`, and never imports `context`;
+  - `cli` calls the tools' `run*` functions and the shared `respond` helper.
 - Only `server.ts` knows every module.
 
 ## 4. Data flow
@@ -110,9 +133,29 @@ src/
 3. `writeAtomic` writes a temp file and renames it; nothing is written when nothing changed.
 4. The progress is recomputed from the written text.
 
+**Graph** (`query_graph` and every graph tool):
+1. `loadGraph` lists the sources with their size and modification time. Concurrent calls share one refresh.
+2. Unchanged files reuse their cached facts (from memory, or from the disk snapshot in a new process). Changed files are re-read and re-parsed; files that disappeared are dropped.
+3. If anything changed, `buildGraph` rebuilds nodes, edges, units and diagnostics from all facts, and the snapshot is rewritten. The result equals a full rebuild.
+4. The tool runs its pure logic (search, traversal, path, communities, lint…) and fits the response to its token budget.
+
+**Semantic layer** (`extraction_batch` → `save_relations`):
+1. A plan lists the pending units: `##` sections whose content hash and extractor version have no coverage row.
+2. The client's agent fetches a batch, reads it and finds relations. The server never calls a model.
+3. `save_relations` validates each item on its own and merges the valid ones into `.specify/memory/relations/<scope>.md` under a lock. Only the affected rows change.
+
 ## 5. Storage
 
-The project root is `SPECWRIGHT_ROOT` (default: the server's working directory). The optional config is `.specify/specwright.json`, `{ "maxResponseChars": 20000 }` (integer ≥ 100). An invalid config stops the server at startup.
+The project root is `SPECWRIGHT_ROOT` (default: the server's working directory). The optional config is `.specify/specwright.json`. An invalid config stops the server at startup.
+
+```json
+{ "maxResponseChars": 20000, "graph": { "include": ["docs"], "cache": "disk", "vaultDir": ".specify/graph/vault" } }
+```
+
+- `maxResponseChars`: integer ≥ 100, default 20,000.
+- `include`: up to 20 relative folders read as `doc` nodes. Each must have no `..`, no dot-segment, no `node_modules` or `.git`, and must not start with `specs` or `.specify`.
+- `cache`: `disk` (default; memory plus a snapshot), `memory`, or `off` (rebuild on every call).
+- `vaultDir`: default, a `vault` folder inside the graph folder. Any other value must pass the `include` rules and not be under `specs/`.
 
 ```
 <project>/
@@ -122,7 +165,12 @@ The project root is `SPECWRIGHT_ROOT` (default: the server's working directory).
     └── memory/
         ├── constitution.md             # Spec Kit (/speckit-constitution); read-only here
         ├── decisions/NNNN-<slug>.md    # log_decision
-        └── notes/<slug>.md             # save_memory
+        ├── notes/<slug>.md             # save_memory
+        └── relations/<scope>.md        # save_relations: Concepts, Relations, Coverage tables
+    └── graph/                          # derived, git-ignored (`.gitignore` = `*`)
+        ├── cache.json                  # per-file facts snapshot
+        ├── graph.json  GRAPH_REPORT.md # export_graph
+        └── vault/                      # export_graph obsidian (the default vaultDir)
 ```
 
 ### 5.1 Guarantees
@@ -133,7 +181,11 @@ The project root is `SPECWRIGHT_ROOT` (default: the server's working directory).
 - **Atomic, byte-minimal writes (NFR-5).** Writes use a temp file and a rename. Only the checkbox character changes, and CRLF and the BOM are preserved.
 - **Exclusive creation.** Decisions and notes are written with `wx`. Notes get `-2`, `-3`… suffixes.
 - **Decision numbering across processes.** Numbering runs under a `mkdir` lock at `.specify/memory/decisions/.lock` (broken after 10 s) plus an in-process queue (decision 0009).
-- **Bounded reads.** Listings read at most 32 files at a time (decision 0010).
+- **Bounded reads.** Listings and graph refreshes read at most 32 files at a time (decision 0010).
+- **Graph path guard.** `resolveWithin(root, rel, prefixes)` generalizes `resolveInside`. Graph reads use `specs`, `.specify` and the `include` folders; vault writes use only the `vaultDir` folder.
+- **Ledgers.** Rows are kept sorted, and a save changes only the rows it adds or updates (one line for one new relation). Writes are atomic and serialized across processes by a lock folder next to the ledgers. `REJECTED` rows are never deleted by the server.
+- **Derived files.** The graph folder's `.gitignore` is created with `wx` and never overwritten. A missing, corrupt or older-schema snapshot is ignored and rewritten.
+- **Vault ownership.** The vault's manifest file lists the files `export_graph` owns. A file it does not own is skipped, owned files no longer produced are deleted, and `.obsidian/` is never touched.
 - **Concurrent edits of one `tasks.md`.** These are not locked: the last write wins, and the change is visible in Git (PRD N5).
 
 ## 6. Formats (Spec Kit v1.2.x)
@@ -198,6 +250,24 @@ status: accepted
 ### 6.6 Note (`.specify/memory/notes/<slug>.md`)
 The frontmatter is `id`, `type` (`convention | learning | pitfall`), `title`, `tags` and `date`, followed by the body.
 
+### 6.7 Relation ledger (`.specify/memory/relations/<scope>.md`)
+The scope is the source node's feature, or `project`. The frontmatter holds `scope`, followed by three Markdown tables:
+
+| Table | Columns | Key |
+|---|---|---|
+| `## Concepts` | `id`, `label`, `summary` | `id` |
+| `## Relations` | `source`, `relation`, `target`, `confidence`, `score`, `evidence`, `date` | `source` + `relation` + `target` |
+| `## Coverage` | `unit`, `hash`, `version`, `date` | `unit` |
+
+Pipes in cells are escaped as `\|`. People may edit rows by hand; `lint_memory` reports invalid rows.
+
+### 6.8 Graph model
+- **Node ids** are typed: `feature:<f>`, `artifact:<f>/<name>`, `artifact:constitution`, `requirement:<f>/FR-###`, `criterion:<f>/SC-###`, `story:<f>/US<n>`, `task:<f>/T###`, `principle:<key>`, `decision:<NNNN>`, `note:<slug>`, `doc:<path>`, `file:<path>` and `concept:<slug>`.
+- **Derived edges** (`EXTRACTED`, score 1): `contains`, `implements`, `references` (`FR-###`, `SC-###`, `US<n>`, `T###`, qualified `<feature>/<ID>`, feature ids and "decision 0007"), `touches` (cited paths), `links_to` (Markdown links and wikilinks) and `belongs_to`.
+- **Semantic edges** come from the ledgers: `depends_on`, `implements`, `rationale_for`, `supersedes`, `contradicts`, `refines`, `part_of`, `tests`, `uses`, `example_of`, `similar_to` and `related_to`, with confidence `INFERRED` (0.5–0.99) or `AMBIGUOUS` (0.1–0.49). A relation line `- <relation> [[Target]]` in any source also gives an edge.
+- **Extraction units** are the `##` sections of each source (or the whole file), identified by `<path>#<section-key>` and hashed.
+- **Communities** come from a deterministic Louvain run, numbered by size and then by the smallest member id.
+
 ## 7. Tool contract
 
 The full contract, with inputs, outputs and errors, is in [`specs/009-speckit-format/contracts/tools.md`](../specs/009-speckit-format/contracts/tools.md).
@@ -213,7 +283,17 @@ The full contract, with inputs, outputs and errors, is in [`specs/009-speckit-fo
 | `list_decisions` | `feature?`, `from?`, `to?` | `{ decisions: [{ id, feature, title, date, status, path }] }` |
 | `save_memory` | `type`, `title`, `body`, `tags?` | `{ id, path }` |
 | `search_memory` | `query`, `type?` (note type, `decision` or `constitution`), `limit?` | `{ results: [{ kind, id, title, type?, feature?, tags?, date?, path, score, snippet }] }` |
-| `pack_context` | `task`, `budget_tokens?`, `feature?` | `{ budget_tokens, used_tokens, items: [{ kind, ref, title, score, tokens, content }], files, skipped }` |
+| `pack_context` | `task`, `budget_tokens?`, `feature?`, `graph?` | `{ budget_tokens, used_tokens, items: [{ kind, ref, title, score, tokens, content }], files, skipped }` |
+| `query_graph` | `question`, `feature?`, `mode?` (`bfs`\|`dfs`), `depth?` (1–4), `budget_tokens?`, `include_ambiguous?` | `{ question, seeds, nodes: [{ id, kind, label, d, path?, line? }], edges, budget_tokens, used_tokens, omitted, needed_budget_tokens?, hint? }` |
+| `get_node` | `ref`, `feature?`, `relation?`, `limit?` | `{ node: { id, kind, label, …, excerpt, read? }, degree, community, out, in, omitted }` |
+| `find_path` | `from`, `to`, `feature?`, `max_hops?` (1–8), `include_ambiguous?` | `{ from, to, hops, nodes, edges, reason? }` |
+| `graph_report` | `top?`, `community?`, `offset?`, `limit?` | counts, most-connected nodes, communities, surprising connections, suggested questions; with `community`, its members and bridges |
+| `extraction_batch` | `units?` (≤ 30), `feature?`, `budget_tokens?`, `limit?` | plan: `{ version, units, pending, batches }`; fetch: `{ version, instructions, items, candidates, deferred? }` |
+| `save_relations` | `relations?` (≤ 200), `concepts?` (≤ 50), `covered?` (≤ 100) | `{ added, updated, unchanged, rejected: [{ field, index, reason }], files }` |
+| `lint_memory` | `feature?`, `limit?` | `{ counts, issues: [{ kind, severity, path, line?, node?, message, fix }] }` |
+| `export_graph` | `format` (`json`\|`report`\|`obsidian`) | `{ format, path, written, unchanged, removed, skipped }` |
+
+The graph contracts are in [`specs/010-second-brain/plan.md`](../specs/010-second-brain/plan.md) ("Tool contracts").
 
 **Behavior.**
 - **`check_against_spec`** never judges. It never includes diff line content, and a rename is reported only from git headers (decisions 0005, 0006).
@@ -224,6 +304,12 @@ The full contract, with inputs, outputs and errors, is in [`specs/009-speckit-fo
   - With `feature`, that feature's open tasks are pinned first.
   - Tokens are estimated as `ceil(chars/4)` (decision 0007), and the budget is capped so the response is never truncated.
   - `files` lists the paths cited in backticks or bare in task lines; files are never read (decision 0008).
+  - With `graph: true`, items linked to the 3 best-ranked items get at least half of the linking item's score before packing.
+- **Node references** (`ref`, `from`, `to`) resolve in order: exact id; short form (`<feature>/FR-003`, `FR-003` with `feature`, `0007`, a note slug, a source path); case-insensitive exact label. Otherwise `NODE_AMBIGUOUS` (up to 10 candidates) or `NODE_NOT_FOUND` (up to 5 suggestions).
+- **`query_graph`** picks up to 3 seeds by term score, traverses without expanding hubs other than the seeds, ranks by distance, edge score and term score, and fits the response to `budget_tokens` without dropping a seed. Tokens are `ceil(chars/4)` of the JSON.
+- **`save_relations`** never writes `EXTRACTED` rows. A triple saved as `REJECTED` stays retired: a later `INFERRED` or `AMBIGUOUS` save of it is refused as `previously_rejected`. A coverage hash that does not match the unit's content is refused as `stale`.
+
+**CLI.** `specwright-mcp graph query|node|path|report|lint|export …` prints the same JSON as the matching tool. Exit codes: 0 on success; 1 on error, or for `lint` when an error-severity issue exists; 2 on bad usage; 3 on `NODE_AMBIGUOUS`; 4 on `NODE_NOT_FOUND`.
 
 ## 8. Errors
 
@@ -237,7 +323,9 @@ The full contract, with inputs, outputs and errors, is in [`specs/009-speckit-fo
 | `INVALID_FEATURE` | operation on an invalid feature (hint: issues) |
 | `INVALID_DIFF` | empty diff or no file headers |
 | `INVALID_INPUT` | semantically invalid input that passed the schema |
-| `PATH_OUTSIDE_ROOT` | the path leaves `specs/` / `.specify/` |
+| `PATH_OUTSIDE_ROOT` | the path leaves `specs/`, `.specify/` or the allowed graph folders |
+| `NODE_NOT_FOUND` | no graph node matches the reference (hint: up to 5 closest ids) |
+| `NODE_AMBIGUOUS` | the reference matches several nodes (hint: up to 10 candidates) |
 | `INTERNAL` | unexpected failure; details on stderr only |
 
 ## 9. Edge cases
@@ -251,19 +339,20 @@ The covered cases are:
 - lowercase `[x]`;
 - symlinks into the rest of the project;
 - legacy decisions;
-- every diff case of v0.1.0.
+- every diff case of v0.1.0;
+- for the graph: wikilinks with aliases, headings and embeds; links in code or comments; ambiguous and broken links; symlinked include folders; escaped pipes and hand-edited ledger rows; a corrupt or older snapshot; two processes writing the same ledger; vault files the user created.
 
 ## 10. Testing strategy
 
-TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test named after it that was seen failing first. The records are in [`docs/tdd/`](tdd/), and [phase-4.md](tdd/phase-4.md) covers this version.
+TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test named after it that was seen failing first. The records are in [`docs/tdd/`](tdd/): [phase-4.md](tdd/phase-4.md) covers the Spec Kit format and [phase-5.md](tdd/phase-5.md) the second brain.
 
 | Suite | Command | Covers |
 |---|---|---|
-| Unit | `npm test` | parsers, editor, path guard, storage helpers, ranking, packer |
-| Integration | `npm test` | every tool through an in-process client, on a copy of `tests/fixtures/speckit/` (built in Spec Kit's template shape) or on inline projects |
-| Contract | `npm test` | the built `dist/index.js` over stdio: exactly 18 tools, the size budget, and a full agent session using all 10 tools |
-| Dogfood | `npm test` | this repository's own `specs/` and `.specify/` (a snapshot copy): 9 valid features |
-| Performance and load | `npm run test:load` | 500 / 2,000 features, 5,000 notes, concurrent and cross-process writes |
+| Unit | `npm test` | parsers, editor, path guard, storage helpers, ranking, packer; every `graph/` file (`tests/unit/graph-*.test.ts`) and the CLI argument parser |
+| Integration | `npm test` | every tool through an in-process client, on a copy of the `speckit` or `brain` test fixture (built in Spec Kit's template shape) or on inline projects |
+| Contract | `npm test` | the built `dist/index.js` over stdio: exactly 18 tools, the size budgets, annotations and `instructions`; a full agent session; a graph workflow that is byte-identical across two processes; CLI parity and exit codes |
+| Dogfood | `npm test` | this repository's own `specs/` and `.specify/` (a snapshot copy): 10 valid features, no `broken_link`, and the SC-001 relation questions |
+| Performance and load | `npm run test:load` | 500 / 2,000 features, 5,000 notes, concurrent and cross-process writes; graph cold, warm and snapshot budgets; two processes writing one ledger |
 
 ## 11. Build and distribution
 
@@ -285,9 +374,17 @@ TDD: every `FR-###` and every acceptance scenario (`US<n>-AS<m>`) has a test nam
 | FR-5 | `check_against_spec` | `005-check-task` → `009` (US3) |
 | FR-7, FR-10 | `log_decision`, `list_decisions` | `004`, `007` → `009` (US4) |
 | FR-8, FR-9 | `save_memory`, `search_memory` | `006` → `009` (US4) |
-| FR-11 | `pack_context` | `008` → `009` (US5) |
+| FR-11 | `pack_context` | `008` → `009` (US5); `graph: true` in `010` (US8) |
+| FR-12 | graph build, cache and snapshot (all graph tools) | `010-second-brain` (US1, US5, US6) |
+| FR-13 | `query_graph`, `get_node`, `find_path` | `010` (US1) |
+| FR-14 | `graph_report` | `010` (US3) |
+| FR-15, FR-16 | `extraction_batch`, `save_relations` | `010` (US2) |
+| FR-17 | `lint_memory` | `010` (US4) |
+| FR-18, FR-19 | `export_graph`, `specwright-mcp graph` | `010` (US7) |
 
 ## 14. Open questions
 
 - Reading `.specify/feature.json` to default the feature in `list_open_tasks` and `pack_context`. Spec 009 keeps it out of scope.
 - Versioning of `.specify/specwright.json` (PRD Q3).
+- Closing `010-second-brain` SC-001: two of the five relation questions still save less than 3× the tokens of reading the files.
+- The incremental refresh compares size and modification time only; a same-size edit within the file system's time resolution is missed until the next change. Switch to a content hash if stale facts are ever seen.
