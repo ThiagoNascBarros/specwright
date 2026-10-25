@@ -754,13 +754,13 @@ Include discovery is implemented in Task 27. Here, `discoverSources` ignores `in
 - `lintGraph(graph: Graph, feature?: string): Issue[]`, which combines `graph.diagnostics` with graph-level checks (orphans, duplicate labels, contradictions, AMBIGUOUS rows, stale coverage per scope).
 - `runLintMemory`
 
-- [ ] T049 [P] [US4] Write failing unit tests: severity mapping per FR-019; sort order; orphan rules; duplicate labels are case-insensitive; one `stale_coverage` issue per scope with a count.
-- [ ] T050 [US4] Write failing integration tests:
+- [X] T049 [P] [US4] Write failing unit tests: severity mapping per FR-019; sort order; orphan rules; duplicate labels are case-insensitive; one `stale_coverage` issue per scope with a count.
+- [X] T050 [US4] Write failing integration tests:
   - `US4-AS1`: `[[missing-note]]` in a note and `[text](../notes/gone.md)` in a decision → 2 `broken_link` errors with path and line;
   - `US4-AS2`: a ledger row targeting `task:001-photo-albums/T999` → `dangling_relation`, and the edge is absent from `get_node`;
   - `US4-AS3`: an AMBIGUOUS row and a `contradicts` row are listed, and `feature: "002-sharing"` keeps only that feature's issues;
   - `FR-019`: an ambiguous wikilink → `ambiguous_link` with both candidate paths in the message.
-- [ ] T051 [US4] Implement `lint.ts` and the tool, and register it.
+- [X] T051 [US4] Implement `lint.ts` and the tool, and register it.
 - Verify: `npm test` is green.
 - Commit: `feat(graph): add lint_memory` + `Refs: SW-10`
 
