@@ -103,6 +103,17 @@ Install the Specwright MCP server for this project.
 4. Tell me if I need to restart the client, then call `list_features` and show me the result.
 ```
 
+### Install as Claude Code plugin
+
+Requires **Node.js 22.12 or later**. No clone, `npm ci` or build is needed: the repository ships a self-contained `dist/index.js`.
+
+```bash
+claude plugin marketplace add ThiagoNascBarros/specwright
+claude plugin install specwright@specwright
+```
+
+Restart your Claude Code session afterwards so the MCP server is loaded.
+
 ### 2. Configure by hand (optional)
 
 To commit the configuration instead, add a `.mcp.json` at the project root:

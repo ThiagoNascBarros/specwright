@@ -2,8 +2,7 @@
   "mcpServers": {
     "specwright": {
       "command": "node",
-      "args": ["dist/index.js"],
-      "env": { "SPECWRIGHT_ROOT": "." }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"]
     }
   }
 }
