@@ -4,5 +4,13 @@
   "description": "The memory and validation layer for GitHub Spec Kit projects: an MCP server that reads specs/, tracks tasks.md progress, keeps decisions in .specify/memory and builds a knowledge graph (the second brain) with queries, reports and an Obsidian vault.",
   "author": {
     "name": "ThiagoNascBarros"
+  },
+  "mcpServers": {
+    "specwright": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/dist/index.js"
+      ]
+    }
   }
 }

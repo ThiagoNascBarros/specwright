@@ -90,9 +90,24 @@ Full contracts: [specs/009-speckit-format/contracts/tools.md](specs/009-speckit-
 
 ## Quick start
 
-### 1. Install and connect
+Requires **Node.js 22.12 or later**.
 
-Requires **Node.js 22.12 or later**. Open your agent in the Spec Kit project where you want to use Specwright and paste this prompt:
+### 1. Install
+
+#### Claude Code (recommended)
+
+No clone, `npm ci` or build is needed: the repository ships a self-contained `dist/index.js`.
+
+```bash
+claude plugin marketplace add ThiagoNascBarros/specwright
+claude plugin install specwright@specwright
+```
+
+Restart your Claude Code session afterwards so the MCP server is loaded. The server uses the session's working directory as the project root, so start Claude Code in your Spec Kit project. Do not also register a manual `specwright` entry (below), or the server is registered twice.
+
+#### Other MCP clients, or a manual setup
+
+Open your agent in the Spec Kit project where you want to use Specwright and paste this prompt:
 
 ```text
 Install the Specwright MCP server for this project.
@@ -103,20 +118,9 @@ Install the Specwright MCP server for this project.
 4. Tell me if I need to restart the client, then call `list_features` and show me the result.
 ```
 
-### Install as Claude Code plugin
+### 2. Project-level configuration (manual install, any client)
 
-Requires **Node.js 22.12 or later**. No clone, `npm ci` or build is needed: the repository ships a self-contained `dist/index.js`.
-
-```bash
-claude plugin marketplace add ThiagoNascBarros/specwright
-claude plugin install specwright@specwright
-```
-
-Restart your Claude Code session afterwards so the MCP server is loaded.
-
-### 2. Configure by hand (optional)
-
-To commit the configuration instead, add a `.mcp.json` at the project root:
+To commit the configuration instead of registering the server per user, add a `.mcp.json` at the project root. It replaces the plugin install above:
 
 ```json
 {
@@ -183,7 +187,7 @@ To retire a wrong relation, save it as `REJECTED` (score 0): it stays in the led
 
 **Without Obsidian.**
 - **Agents:** `query_graph`, `get_node`, `find_path` and `graph_report` answer from the graph, and `lint_memory` checks it.
-- **Terminal:** the same JSON as the tools.
+- **Terminal:** the same JSON as the tools. Replace `/path/to/specwright` with your clone; a plugin install has no clone, so use the plugin's `dist/index.js` under `~/.claude/plugins/`.
 
   ```bash
   node /path/to/specwright/dist/index.js graph report
